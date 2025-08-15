@@ -1,133 +1,169 @@
-# Swift Secrets 🎵
+# Taylor Swift Easter Eggs 🥚
 
-A beautiful, interactive showcase of Taylor Swift Easter eggs and hidden clues discovered by Swifties around the world.
+A beautiful, interactive showcase of Taylor Swift Easter eggs and hidden clues discovered by Swifties around the world. Built with a MERN-style stack using **Express.js** backend, **React** frontend, and **Supabase** as the database.
 
-## ✨ Features
+## 🏗️ Architecture
 
-- **Easter Egg Discovery**: Browse through a curated collection of Taylor Swift Easter eggs
-- **Smart Filtering**: Filter by album, media type, clue type, and search keywords
-- **Responsive Design**: Beautiful UI that works on all devices
-- **Interactive Cards**: Click on any Easter egg to see detailed information
-- **Modern UI**: Built with Next.js 15 and Tailwind CSS
+This project follows a **MERN-style stack** but replaces MongoDB with **Supabase**:
 
-## 🚀 Getting Started
+- **Backend**: Express.js server with RESTful API endpoints
+- **Frontend**: React.js with Tailwind CSS
+- **Database**: Supabase (PostgreSQL with real-time features)
+- **Authentication**: Supabase Auth (ready to implement)
+
+## 🚀 Quick Start
 
 ### Prerequisites
 
-- Node.js 18+ 
-- npm 8+ or yarn
+- Node.js (>=18.0.0)
+- npm (>=8.0.0)
+- Supabase account and project
 
-### Installation
+### 1. Install Dependencies
 
-1. Clone the repository:
 ```bash
-git clone https://github.com/e-deng/eggs.git
-cd eggs
-```
-
-2. Install dependencies:
-```bash
+# Install server dependencies
 npm install
+
+# Install client dependencies
+cd client && npm install
+cd ..
 ```
 
-3. Run the development server:
+### 2. Environment Setup
+
+Create a `.env` file in the root directory:
+
+```env
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+PORT=5000
+```
+
+### 3. Run the Application
+
 ```bash
+# Development mode (runs both server and client)
 npm run dev
+
+# Or run separately:
+npm run server    # Backend on port 5000
+npm run client    # Frontend on port 3000
 ```
 
-4. Open [http://localhost:3000](http://localhost:3000) in your browser.
-
-## 🛠️ Tech Stack
-
-- **Framework**: Next.js 15
-- **Styling**: Tailwind CSS
-- **UI Components**: shadcn/ui
-- **Icons**: Lucide React
-- **Language**: TypeScript
-- **Package Manager**: npm
-
-## 📱 Available Scripts
-
-- `npm run dev` - Start development server
-- `npm run build` - Build for production
-- `npm run start` - Start production server
-- `npm run lint` - Run ESLint
-- `npm run type-check` - Run TypeScript type checking
-- `npm run clean` - Clean build artifacts
-- `npm run format` - Format code with Prettier
-- `npm run format:check` - Check code formatting
-- `npm test` - Run tests (placeholder)
-
-## 🎨 Project Structure
+## 📁 Project Structure
 
 ```
 eggs/
-├── app/                      # Next.js app directory (App Router)
-│   ├── globals.css          # Global styles
-│   ├── layout.tsx           # Root layout
-│   ├── loading.tsx          # Loading component
-│   └── page.tsx             # Home page
-├── src/                      # Source code directory
-│   ├── components/           # React components
-│   │   ├── ui/              # shadcn/ui components
-│   │   └── theme-provider.tsx
-│   ├── hooks/                # Custom React hooks
-│   ├── lib/                  # Utility functions
-│   ├── styles/               # Additional styles
-│   ├── types/                # TypeScript type definitions
-│   └── utils/                # Helper utilities
-├── public/                   # Static assets
-├── .gitignore               # Git ignore rules
-├── .npmrc                   # NPM configuration
-├── .nvmrc                   # Node.js version specification
-├── components.json          # shadcn/ui configuration
-├── next.config.mjs          # Next.js configuration
-├── package.json             # Project dependencies and scripts
-├── postcss.config.mjs       # PostCSS configuration
-├── README.md                # Project documentation
-└── tsconfig.json            # TypeScript configuration
+├── server.js                 # Express server entry point
+├── package.json             # Server dependencies
+├── .env                     # Environment variables
+├── client/                  # React frontend
+│   ├── public/             # Static assets
+│   ├── src/                # React source code
+│   │   ├── components/     # React components
+│   │   ├── App.js         # Main app component
+│   │   └── index.js       # React entry point
+│   ├── package.json        # Client dependencies
+│   └── tailwind.config.js  # Tailwind CSS config
+└── README.md               # This file
 ```
 
-## 🌟 Easter Egg Categories
+## 🔌 API Endpoints
 
-- **Albums**: Fearless, Speak Now, Red, 1989, reputation, Lover, folklore, evermore, Midnights, TTPD
-- **Media Types**: Music Video, Performance, Fashion, Photo, Social Media, Interview, Album Art, Music
-- **Clue Types**: Visual, Color, Hidden Message, Number, Symbol, Time, Lyric
+The Express server provides these RESTful endpoints:
 
-## 🔧 Development
+- `GET /api/easter-eggs` - Fetch all Easter eggs
+- `POST /api/easter-eggs` - Add a new Easter egg
+- `GET /api/easter-eggs/:id/comments` - Fetch comments for an egg
+- `POST /api/comments` - Add a new comment
+- `GET /api/health` - Health check endpoint
 
-### Code Quality
-- **TypeScript**: Strict type checking enabled
-- **ESLint**: Code linting and style enforcement
-- **Prettier**: Code formatting (configured but not enforced)
+## 🎨 Features
 
-### Build Process
-- **Development**: Hot reload with Next.js dev server
-- **Production**: Optimized build with Next.js
-- **Type Checking**: Separate TypeScript compilation step
+- **Responsive Design**: Beautiful UI that works on all devices
+- **Real-time Updates**: Comments and interactions update instantly
+- **Search & Filter**: Find Easter eggs by album, media type, or keywords
+- **Interactive Modals**: Detailed views with comment sections
+- **Modern UI**: Built with Tailwind CSS for a polished look
+
+## 🗄️ Database Schema
+
+### Easter Eggs Table
+```sql
+CREATE TABLE easter_eggs (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  title TEXT NOT NULL,
+  description TEXT NOT NULL,
+  album TEXT,
+  media_type TEXT,
+  clue_type TEXT,
+  image_url TEXT,
+  video_url TEXT,
+  upvotes_count INTEGER DEFAULT 0,
+  comments_count INTEGER DEFAULT 0,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+```
+
+### Comments Table
+```sql
+CREATE TABLE comments (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  easter_egg_id UUID REFERENCES easter_eggs(id) ON DELETE CASCADE,
+  content TEXT NOT NULL,
+  author TEXT NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+```
+
+## 🛠️ Development
+
+### Available Scripts
+
+- `npm run dev` - Start both server and client in development mode
+- `npm run server` - Start only the Express server
+- `npm run client` - Start only the React client
+- `npm run build` - Build the React app for production
+- `npm start` - Start the production server
+
+### Adding New Features
+
+1. **Backend**: Add new routes in `server.js`
+2. **Frontend**: Create new components in `client/src/components/`
+3. **Database**: Update Supabase schema as needed
+
+## 🌟 Why This Stack?
+
+- **Express.js**: Lightweight, flexible Node.js framework
+- **React**: Component-based UI library with great developer experience
+- **Supabase**: Modern alternative to Firebase with PostgreSQL backend
+- **JavaScript**: No TypeScript compilation overhead, faster development
+- **Tailwind CSS**: Utility-first CSS framework for rapid UI development
+
+## 📱 Browser Support
+
+- Chrome (latest)
+- Firefox (latest)
+- Safari (latest)
+- Edge (latest)
 
 ## 🤝 Contributing
 
-This is a showcase project featuring discovered Easter eggs. The current implementation uses mock data to demonstrate the interface and functionality.
-
-### Development Workflow
 1. Fork the repository
 2. Create a feature branch
 3. Make your changes
-4. Run tests and type checking
+4. Test thoroughly
 5. Submit a pull request
 
 ## 📄 License
 
-This project is open source and available under the [MIT License](LICENSE).
+MIT License - see LICENSE file for details
 
 ## 🙏 Acknowledgments
 
-- Taylor Swift for the incredible music and hidden clues
-- The Swiftie community for discovering and sharing Easter eggs
-- shadcn/ui for the beautiful component library
-- Next.js team for the amazing framework
-
----
-
-Made with 💜💖💛 by Swifties for Swifties
+- Taylor Swift for the amazing music and hidden clues
+- The Swiftie community for discovering these Easter eggs
+- Supabase team for the excellent database platform
+- Tailwind CSS team for the amazing utility-first CSS framework
