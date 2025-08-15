@@ -250,38 +250,22 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-50">
+    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-orange-100 to-green-50">
       {/* Header */}
-      <header className="bg-white shadow-sm border-b border-purple-100">
+      <header className="bg-white shadow-sm border-b-2 border-orange-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          {/* Supabase Configuration Notice */}
-          <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-            <p className="text-sm text-yellow-800">
-              <strong>Note:</strong> This is now a MERN-style stack with Express backend and Supabase! 
-              The app is running on separate ports (backend: 5000, frontend: 3000).
-            </p>
-          </div>
-          
+                  
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gradient-to-r from-purple-600 to-pink-600 rounded-lg flex items-center justify-center">
+              <div className="w-10 h-10 bg-gradient-to-r from-orange-500 via-orange-600 to-green-600 rounded-lg flex items-center justify-center">
                 <span className="text-white font-bold text-xl">🥚</span>
               </div>
               <div>
-                <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+                <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-orange-600 to-orange-700 bg-clip-text text-transparent">
                   Taylor Swift Easter Eggs
                 </h1>
                 <p className="text-sm text-gray-600">
-                  {selectedAlbum !== "All Albums" ? (
-                    <span className="flex items-center gap-2">
-                      <span>Discovering hidden clues in</span>
-                      <span className={`${getAlbumColors(selectedAlbum).bg} ${getAlbumColors(selectedAlbum).border} ${getAlbumColors(selectedAlbum).text} px-2 py-1 rounded text-xs font-medium`}>
-                        {selectedAlbum}
-                      </span>
-                    </span>
-                  ) : (
-                    "Discover hidden clues and connections"
-                  )}
+                  Discover hidden clues and connections
                 </p>
               </div>
             </div>
@@ -289,7 +273,7 @@ export default function App() {
             <div className="flex gap-2">
               <button
                 onClick={() => setIsAddEggModalOpen(true)}
-                className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white px-6 py-2 rounded-lg font-medium shadow-lg hover:shadow-xl transition-all duration-200"
+                className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white px-6 py-2 rounded-lg font-medium shadow-lg hover:shadow-xl transition-all duration-200"
               >
                 <Plus className="h-5 w-5 mr-2 inline" />
                 Add Easter Egg
@@ -353,7 +337,7 @@ export default function App() {
               className={`bg-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 cursor-pointer overflow-hidden group ${
                 egg.album 
                   ? `${getAlbumColors(egg.album).bg} bg-opacity-30 border-2 ${getAlbumColors(egg.album).border}` 
-                  : 'border border-gray-100 hover:border-purple-200'
+                  : 'border border-gray-100 hover:border-orange-200'
               }`}
             >
               <div className="relative">
@@ -368,19 +352,19 @@ export default function App() {
                       upvotedEggs.has(egg.id) 
                         ? egg.album 
                           ? `${getAlbumColors(egg.album).bg} ${getAlbumColors(egg.album).text} border-2 ${getAlbumColors(egg.album).border}` 
-                          : 'bg-purple-100 text-purple-700 border-purple-200'
-                        : 'bg-white/90 hover:bg-white text-gray-700 hover:bg-purple-50 hover:text-purple-700'
+                          : 'bg-orange-100 text-orange-700 border-orange-200'
+                        : 'bg-white/90 hover:bg-white text-gray-700 hover:bg-orange-50 hover:text-orange-700'
                     } shadow-md px-3 py-1 rounded text-sm flex items-center gap-1 transition-colors`}
                     onClick={(e) => {
                       e.stopPropagation()
                       handleVote(egg.id, 'upvote')
                     }}
                   >
-                    <TrendingUp className={`h-4 w-4 ${upvotedEggs.has(egg.id) ? (egg.album ? getAlbumColors(egg.album).text : 'text-purple-600') : ''}`} />
+                    <TrendingUp className={`h-4 w-4 ${upvotedEggs.has(egg.id) ? (egg.album ? getAlbumColors(egg.album).text : 'text-orange-600') : ''}`} />
                     <span>{egg.upvotes_count || 0}</span>
                   </button>
                   <button
-                    className="bg-white/90 hover:bg-white text-gray-700 shadow-md px-3 py-1 rounded text-sm flex items-center gap-1 hover:bg-pink-50 hover:text-pink-700 transition-colors"
+                    className="bg-white/90 hover:bg-white text-gray-700 shadow-md px-3 py-1 rounded text-sm flex items-center gap-1 hover:bg-orange-50 hover:text-orange-700 transition-colors"
                     onClick={(e) => {
                       e.stopPropagation()
                       // Remove upvote functionality
@@ -499,11 +483,11 @@ export default function App() {
                             upvotedEggs.has(selectedEgg.id)
                               ? selectedEgg.album
                                 ? `${getAlbumColors(selectedEgg.album).bg} ${getAlbumColors(selectedEgg.album).text}`
-                                : 'text-purple-700 bg-purple-50'
-                              : 'text-gray-600 hover:text-purple-700 hover:bg-purple-50'
+                                : 'text-orange-700 bg-orange-50'
+                              : 'text-gray-600 hover:text-orange-700 hover:bg-orange-50'
                           }`}
                         >
-                          <TrendingUp className={`h-4 w-4 ${upvotedEggs.has(selectedEgg.id) ? (selectedEgg.album ? getAlbumColors(selectedEgg.album).text : 'text-purple-600') : ''}`} />
+                          <TrendingUp className={`h-4 w-4 ${upvotedEggs.has(selectedEgg.id) ? (selectedEgg.album ? getAlbumColors(selectedEgg.album).text : 'text-orange-600') : ''}`} />
                           <span className="text-sm sm:text-base">{selectedEgg.upvotes_count || 0} likes</span>
                         </button>
                       </div>
