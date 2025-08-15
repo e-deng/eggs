@@ -121,3 +121,61 @@
     @apply bg-background text-foreground;
   }
 }
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer utilities {
+  /* Hide scrollbar for mobile */
+  .scrollbar-hide {
+    -ms-overflow-style: none;  /* Internet Explorer 10+ */
+    scrollbar-width: none;  /* Firefox */
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;  /* Safari and Chrome */
+  }
+  
+  /* Touch-friendly improvements */
+  @media (max-width: 640px) {
+    .touch-friendly {
+      min-height: 44px;
+      min-width: 44px;
+    }
+  }
+  
+  /* Mobile-optimized text */
+  .mobile-text {
+    @apply text-sm sm:text-base;
+  }
+  
+  .mobile-text-sm {
+    @apply text-xs sm:text-sm;
+  }
+  
+  /* Mobile-optimized spacing */
+  .mobile-p {
+    @apply p-3 sm:p-4;
+  }
+  
+  .mobile-px {
+    @apply px-3 sm:px-4;
+  }
+  
+  .mobile-py {
+    @apply py-3 sm:py-4;
+  }
+  
+  /* Mobile-optimized margins */
+  .mobile-m {
+    @apply m-3 sm:m-4;
+  }
+  
+  .mobile-mx {
+    @apply mx-3 sm:mx-4;
+  }
+  
+  .mobile-my {
+    @apply my-3 sm:my-4;
+  }
+}

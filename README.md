@@ -62,12 +62,12 @@ npm run dev
 
 ```
 eggs/
+├── app/                      # Next.js app directory (App Router)
+│   ├── globals.css          # Global styles
+│   ├── layout.tsx           # Root layout
+│   ├── loading.tsx          # Loading component
+│   └── page.tsx             # Home page
 ├── src/                      # Source code directory
-│   ├── app/                  # Next.js app directory
-│   │   ├── globals.css      # Global styles
-│   │   ├── layout.tsx       # Root layout
-│   │   ├── loading.tsx      # Loading component
-│   │   └── page.tsx         # Home page
 │   ├── components/           # React components
 │   │   ├── ui/              # shadcn/ui components
 │   │   └── theme-provider.tsx
@@ -78,6 +78,8 @@ eggs/
 │   └── utils/                # Helper utilities
 ├── public/                   # Static assets
 ├── .gitignore               # Git ignore rules
+├── .npmrc                   # NPM configuration
+├── .nvmrc                   # Node.js version specification
 ├── components.json          # shadcn/ui configuration
 ├── next.config.mjs          # Next.js configuration
 ├── package.json             # Project dependencies and scripts

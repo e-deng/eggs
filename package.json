@@ -2,7 +2,7 @@
   "name": "eggs",
   "version": "0.1.0",
   "description": "A beautiful, interactive showcase of Taylor Swift Easter eggs and hidden clues discovered by Swifties around the world",
-  "main": "src/app/page.tsx",
+  "main": "app/page.tsx",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -67,6 +67,7 @@
     "@radix-ui/react-toggle": "1.1.1",
     "@radix-ui/react-toggle-group": "1.1.1",
     "@radix-ui/react-tooltip": "1.1.6",
+    "@supabase/supabase-js": "2.55.0",
     "autoprefixer": "^10.4.20",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
