@@ -5,7 +5,7 @@ import { GeistMono } from "geist/font/mono"
 import "./globals.css"
 
 export const metadata: Metadata = {
-  title: "Swift Easter Eggs - Discover Taylor Swift Clues",
+  title: "Egg",
   description: "A collaborative platform for Swifties to discover and document Taylor Swift Easter eggs",
 }
 

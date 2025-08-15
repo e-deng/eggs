@@ -1,14 +1,21 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  eslint: {
-    ignoreDuringBuilds: true,
+  experimental: {
+    typedRoutes: true,
   },
-  typescript: {
-    ignoreBuildErrors: true,
-  },
+  // Use src directory
+  distDir: '.next',
+  // Enable source maps for development
+  productionBrowserSourceMaps: false,
+  // Optimize images
   images: {
-    unoptimized: true,
+    domains: [],
+    formats: ['image/webp', 'image/avif'],
   },
+  // Enable compression
+  compress: true,
+  // Enable powered by header removal
+  poweredByHeader: false,
 }
 
 export default nextConfig

@@ -15,7 +15,7 @@ A beautiful, interactive showcase of Taylor Swift Easter eggs and hidden clues d
 ### Prerequisites
 
 - Node.js 18+ 
-- npm or yarn
+- npm 8+ or yarn
 
 ### Installation
 
@@ -44,6 +44,7 @@ npm run dev
 - **UI Components**: shadcn/ui
 - **Icons**: Lucide React
 - **Language**: TypeScript
+- **Package Manager**: npm
 
 ## 📱 Available Scripts
 
@@ -51,21 +52,38 @@ npm run dev
 - `npm run build` - Build for production
 - `npm run start` - Start production server
 - `npm run lint` - Run ESLint
+- `npm run type-check` - Run TypeScript type checking
+- `npm run clean` - Clean build artifacts
+- `npm run format` - Format code with Prettier
+- `npm run format:check` - Check code formatting
+- `npm test` - Run tests (placeholder)
 
 ## 🎨 Project Structure
 
 ```
 eggs/
-├── app/                    # Next.js app directory
-│   ├── globals.css        # Global styles
-│   ├── layout.tsx         # Root layout
-│   └── page.tsx           # Home page
-├── components/             # React components
-│   └── ui/                # shadcn/ui components
-├── hooks/                  # Custom React hooks
-├── lib/                    # Utility functions
-├── public/                 # Static assets
-└── types/                  # TypeScript type definitions
+├── src/                      # Source code directory
+│   ├── app/                  # Next.js app directory
+│   │   ├── globals.css      # Global styles
+│   │   ├── layout.tsx       # Root layout
+│   │   ├── loading.tsx      # Loading component
+│   │   └── page.tsx         # Home page
+│   ├── components/           # React components
+│   │   ├── ui/              # shadcn/ui components
+│   │   └── theme-provider.tsx
+│   ├── hooks/                # Custom React hooks
+│   ├── lib/                  # Utility functions
+│   ├── styles/               # Additional styles
+│   ├── types/                # TypeScript type definitions
+│   └── utils/                # Helper utilities
+├── public/                   # Static assets
+├── .gitignore               # Git ignore rules
+├── components.json          # shadcn/ui configuration
+├── next.config.mjs          # Next.js configuration
+├── package.json             # Project dependencies and scripts
+├── postcss.config.mjs       # PostCSS configuration
+├── README.md                # Project documentation
+└── tsconfig.json            # TypeScript configuration
 ```
 
 ## 🌟 Easter Egg Categories
@@ -74,9 +92,28 @@ eggs/
 - **Media Types**: Music Video, Performance, Fashion, Photo, Social Media, Interview, Album Art, Music
 - **Clue Types**: Visual, Color, Hidden Message, Number, Symbol, Time, Lyric
 
+## 🔧 Development
+
+### Code Quality
+- **TypeScript**: Strict type checking enabled
+- **ESLint**: Code linting and style enforcement
+- **Prettier**: Code formatting (configured but not enforced)
+
+### Build Process
+- **Development**: Hot reload with Next.js dev server
+- **Production**: Optimized build with Next.js
+- **Type Checking**: Separate TypeScript compilation step
+
 ## 🤝 Contributing
 
 This is a showcase project featuring discovered Easter eggs. The current implementation uses mock data to demonstrate the interface and functionality.
+
+### Development Workflow
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Run tests and type checking
+5. Submit a pull request
 
 ## 📄 License
 

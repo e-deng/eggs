@@ -1,12 +1,42 @@
 {
   "name": "eggs",
   "version": "0.1.0",
+  "description": "A beautiful, interactive showcase of Taylor Swift Easter eggs and hidden clues discovered by Swifties around the world",
+  "main": "src/app/page.tsx",
   "private": true,
   "scripts": {
-    "build": "next build",
     "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
     "lint": "next lint",
-    "start": "next start"
+    "type-check": "tsc --noEmit",
+    "clean": "rm -rf .next out",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "echo \"No tests specified\" && exit 0"
+  },
+  "keywords": [
+    "taylor-swift",
+    "easter-eggs",
+    "swifties",
+    "nextjs",
+    "react",
+    "typescript",
+    "tailwindcss"
+  ],
+  "author": "e-deng",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/e-deng/eggs.git"
+  },
+  "bugs": {
+    "url": "https://github.com/e-deng/eggs/issues"
+  },
+  "homepage": "https://github.com/e-deng/eggs#readme",
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
@@ -46,7 +76,7 @@
     "geist": "latest",
     "input-otp": "1.4.1",
     "lucide-react": "^0.454.0",
-    "next": "^15.4.6",
+    "next": "15.4.6",
     "next-themes": "latest",
     "react": "^18",
     "react-day-picker": "9.8.0",
