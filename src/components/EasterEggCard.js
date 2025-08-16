@@ -53,7 +53,7 @@ export default function EasterEggCard({
                   e.stopPropagation()
                   onEditEgg(egg)
                 }}
-                className="text-gray-500 hover:text-orange-600 p-1 rounded transition-colors"
+                className="text-gray-500 hover:text-orange-600 p-2 rounded-lg hover:bg-orange-50 transition-colors border border-transparent hover:border-orange-200"
                 title="Edit post"
               >
                 ✏️

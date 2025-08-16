@@ -142,11 +142,15 @@ export const easterEggsService = {
 
   // Update easter egg
   async updateEasterEgg(id, updates) {
+    console.log('Service: Updating easter egg', id, 'with:', updates)
+    
     const { data, error } = await supabase
       .from('easter_eggs')
       .update(updates)
       .eq('id', id)
       .select()
+    
+    console.log('Service: Update result:', { data, error })
     return { data, error }
   },
 

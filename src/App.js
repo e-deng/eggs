@@ -287,14 +287,44 @@ export default function App() {
   // Handle updating an Easter egg
   const handleUpdateEgg = async (eggId, updatedData) => {
     try {
-      const { error } = await easterEggsService.updateEasterEgg(eggId, updatedData)
+      console.log('Updating egg:', eggId, 'with data:', updatedData)
+      
+      // Convert FormData to regular object for Supabase
+      const eggData = {
+        title: updatedData.get('title'),
+        description: updatedData.get('description'),
+        album: updatedData.get('album') || null,
+        media_type: updatedData.get('media_type') || null,
+        clue_type: updatedData.get('clue_type') || null
+      }
+      
+      // Handle image removal
+      if (updatedData.get('remove_image') === 'true') {
+        eggData.image_url = null
+      }
+      
+      // Handle video removal
+      if (updatedData.get('remove_video') === 'true') {
+        eggData.video_url = null
+      }
+      
+      console.log('Processed egg data:', eggData)
+      
+      const { data, error } = await easterEggsService.updateEasterEgg(eggId, eggData)
       
       if (error) {
+        console.error('Supabase update error:', error)
         throw new Error('Failed to update Easter egg')
       }
+      
+      console.log('Update successful:', data)
 
       // Refresh the Easter eggs list
-      loadEasterEggs()
+      await loadEasterEggs()
+      
+      // Close the edit modal
+      setIsEditEggModalOpen(false)
+      setEditingEgg(null)
     } catch (error) {
       console.error('Error updating egg:', error)
       throw error
@@ -417,7 +447,7 @@ export default function App() {
   }, [easterEggs, activeTab, user, userLikes, searchQuery, selectedAlbum, sortBy])
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 flex flex-col">
       {/* Header */}
       <Header 
         user={user} 
@@ -433,7 +463,7 @@ export default function App() {
       {!user && <AuthNotice onOpenAuthModal={() => setIsAuthModalOpen(true)} />}
 
       {/* Main Content */}
-      <main className="max-w-4xl mx-auto px-4 py-6">
+      <main className="flex-1 max-w-4xl mx-auto px-4 py-6">
         {/* Top Navigation */}
         <TopNavigation 
           activeTab={activeTab}
@@ -546,6 +576,15 @@ export default function App() {
         isOpen={isAddEggModalOpen}
         onClose={() => setIsAddEggModalOpen(false)}
         onAdd={handleAddEgg}
+        user={user}
+      />
+
+      {/* Edit Easter Egg Modal */}
+      <EditEggModal
+        isOpen={isEditEggModalOpen}
+        onClose={() => setIsEditEggModalOpen(false)}
+        onUpdate={handleUpdateEgg}
+        egg={editingEgg}
         user={user}
       />
 
