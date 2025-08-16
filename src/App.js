@@ -364,7 +364,6 @@ export default function App() {
   const handleOpenUserSettings = () => {
     // TODO: Implement user settings modal
     setIsMobileProfileOpen(false)
-    console.log("Open user settings")
   }
 
   // Filter and sort Easter eggs

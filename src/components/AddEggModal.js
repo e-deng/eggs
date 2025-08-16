@@ -71,17 +71,17 @@ export default function AddEggModal({ isOpen, onClose, onAdd, user }) {
 
   const handleDragOver = (e) => {
     e.preventDefault()
-    e.currentTarget.classList.add('border-purple-400', 'bg-purple-50')
+    e.currentTarget.classList.add('border-orange-400', 'bg-orange-50')
   }
 
   const handleDragLeave = (e) => {
     e.preventDefault()
-    e.currentTarget.classList.remove('border-purple-400', 'bg-purple-50')
+    e.currentTarget.classList.remove('border-orange-400', 'bg-orange-50')
   }
 
   const handleDrop = (e) => {
     e.preventDefault()
-    e.currentTarget.classList.remove('border-purple-400', 'bg-purple-50')
+    e.currentTarget.classList.remove('border-orange-400', 'bg-orange-50')
     
     const files = e.dataTransfer.files
     if (files.length > 0) {
@@ -112,7 +112,7 @@ export default function AddEggModal({ isOpen, onClose, onAdd, user }) {
 
   const handleVideoDrop = (e) => {
     e.preventDefault()
-    e.currentTarget.classList.remove('border-purple-400', 'bg-purple-50')
+    e.currentTarget.classList.remove('border-orange-400', 'bg-orange-50')
     
     const files = e.dataTransfer.files
     if (files.length > 0) {
@@ -279,7 +279,7 @@ export default function AddEggModal({ isOpen, onClose, onAdd, user }) {
                 value={formData.title}
                 onChange={handleChange}
                 required
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
                 placeholder="e.g., Midnight Clock at 3 AM"
               />
             </div>
@@ -292,7 +292,7 @@ export default function AddEggModal({ isOpen, onClose, onAdd, user }) {
                 name="album"
                 value={formData.album}
                 onChange={handleChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
               >
                 <option value="">Select an album</option>
                 {albums.map((album) => (
@@ -314,7 +314,7 @@ export default function AddEggModal({ isOpen, onClose, onAdd, user }) {
               onChange={handleChange}
               required
               rows={4}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
               placeholder="Describe the Easter egg and its significance..."
             />
           </div>
@@ -328,7 +328,7 @@ export default function AddEggModal({ isOpen, onClose, onAdd, user }) {
                 name="media_type"
                 value={formData.media_type}
                 onChange={handleChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
               >
                 <option value="">Select media type</option>
                 {mediaTypes.map((type) => (
@@ -347,7 +347,7 @@ export default function AddEggModal({ isOpen, onClose, onAdd, user }) {
                 name="clue_type"
                 value={formData.clue_type}
                 onChange={handleChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
               >
                 <option value="">Select clue type</option>
                 {clueTypes.map((type) => (
@@ -367,7 +367,7 @@ export default function AddEggModal({ isOpen, onClose, onAdd, user }) {
             
             {!imagePreview ? (
               <div 
-                className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-purple-400 transition-colors"
+                className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-orange-400 transition-colors"
                 onDragOver={handleDragOver}
                 onDragLeave={handleDragLeave}
                 onDrop={handleDrop}
@@ -382,7 +382,7 @@ export default function AddEggModal({ isOpen, onClose, onAdd, user }) {
                 <label htmlFor="image-upload" className="cursor-pointer">
                   <Upload className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                   <p className="text-gray-600 mb-2">
-                    <span className="font-medium text-purple-600 hover:text-purple-500">
+                    <span className="font-medium text-orange-600 hover:text-orange-500">
                       Click to upload
                     </span>{" "}
                     or drag and drop
@@ -420,7 +420,7 @@ export default function AddEggModal({ isOpen, onClose, onAdd, user }) {
             
             {!videoPreview ? (
               <div 
-                className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-purple-400 transition-colors"
+                className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-orange-400 transition-colors"
                 onDragOver={handleDragOver}
                 onDragLeave={handleDragLeave}
                 onDrop={handleVideoDrop}
@@ -435,7 +435,7 @@ export default function AddEggModal({ isOpen, onClose, onAdd, user }) {
                 <label htmlFor="video-upload" className="cursor-pointer">
                   <Upload className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                   <p className="text-gray-600 mb-2">
-                    <span className="font-medium text-purple-600 hover:text-purple-500">
+                    <span className="font-medium text-orange-600 hover:text-orange-500">
                       Click to upload
                     </span>{" "}
                     or drag and drop

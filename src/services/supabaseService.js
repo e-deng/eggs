@@ -198,7 +198,7 @@ export const commentsService = {
       const commentsMap = new Map()
       const rootComments = []
       
-      console.log('Processing comments:', allComments)
+
       
       // First pass: create a map of all comments
       allComments.forEach(comment => {
@@ -250,7 +250,7 @@ export const commentsService = {
           const match = comment.content.match(/\[REPLY_TO:([^\]]+)\]/)
           if (match) {
             parentId = match[1]
-            console.log(`Detected reply from content prefix: ${comment.id} -> ${parentId}`)
+
           }
         }
         
@@ -259,26 +259,20 @@ export const commentsService = {
           const parentComment = commentsMap.get(parentId)
           if (parentComment) {
             parentComment.replies.push(commentsMap.get(comment.id))
-            console.log(`Added reply ${comment.id} to parent ${parentId}`)
+
           } else {
             // Parent comment not found, treat as root comment
-            console.log(`Parent comment ${parentId} not found for reply ${comment.id}, treating as root`)
+
             rootComments.push(commentsMap.get(comment.id))
           }
         } else {
           // This is a root comment
-          console.log(`Adding root comment ${comment.id}`)
+
           rootComments.push(commentsMap.get(comment.id))
         }
       })
       
-      // Debug: Log the tree structure
-      console.log('Root comments:', rootComments.map(c => ({ id: c.id, replies: c.replies?.length || 0 })))
-      rootComments.forEach(comment => {
-        if (comment.replies && comment.replies.length > 0) {
-          console.log(`Comment ${comment.id} has ${comment.replies.length} replies:`, comment.replies.map(r => r.id))
-        }
-      })
+
       
       // Calculate depth for each comment and its replies
       const calculateDepth = (comment, depth = 0) => {
@@ -298,7 +292,7 @@ export const commentsService = {
         }
       })
       
-      console.log('Processed comments with depth:', rootComments)
+
       return { data: rootComments, error: null }
     } catch (error) {
       return { data: null, error: error.message }
@@ -338,7 +332,7 @@ export const commentsService = {
     try {
       // Since parent_comment_id column doesn't exist yet, we'll use a different approach
       // We'll add a special prefix to the content to identify replies
-      console.log('Creating reply with content-based tracking')
+
       
       // Get the parent comment to include its username in the reply
       const { data: parentComment, error: parentError } = await supabase
@@ -618,7 +612,6 @@ export const commentLikesService = {
     try {
       // For now, we'll skip updating the upvotes_count column since it doesn't exist yet
       // The real-time count will be fetched from comment_likes table instead
-      console.log(`Would update comment ${commentId} upvotes count by ${increment} (column not available yet)`)
       return
     } catch (error) {
       console.error('Error in updateCommentUpvotesCount:', error)

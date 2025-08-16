@@ -9,8 +9,8 @@ export default function LoginPrompt({
   return (
     <div className="text-center py-16 px-4">
       {/* Icon */}
-      <div className="mx-auto w-16 h-16 bg-gradient-to-br from-purple-100 to-pink-100 rounded-full flex items-center justify-center mb-6">
-        <Heart className="h-8 w-8 text-purple-600" />
+      <div className="mx-auto w-16 h-16 bg-gradient-to-br from-orange-100 to-pink-100 rounded-full flex items-center justify-center mb-6">
+        <Heart className="h-8 w-8 text-orange-600" />
       </div>
       
       {/* Message */}
@@ -25,7 +25,7 @@ export default function LoginPrompt({
       <div className="flex flex-col sm:flex-row gap-3 justify-center">
         <button
           onClick={() => onOpenAuthModal("login")}
-          className="flex items-center justify-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-lg font-medium transition-colors"
+          className="flex items-center justify-center gap-2 bg-orange-600 hover:bg-orange-700 text-white px-6 py-3 rounded-lg font-medium transition-colors"
         >
           <LogIn className="h-5 w-5" />
           Sign In
@@ -34,7 +34,7 @@ export default function LoginPrompt({
         {showSignUp && (
           <button
             onClick={() => onOpenAuthModal("register")}
-            className="flex items-center justify-center gap-2 bg-white hover:bg-gray-50 text-purple-600 border-2 border-purple-600 px-6 py-3 rounded-lg font-medium transition-colors"
+            className="flex items-center justify-center gap-2 bg-white hover:bg-gray-50 text-orange-600 border-2 border-orange-600 px-6 py-3 rounded-lg font-medium transition-colors"
           >
             <UserPlus className="h-5 w-5" />
             Create Account

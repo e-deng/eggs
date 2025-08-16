@@ -199,7 +199,7 @@ export default function EditEggModal({ isOpen, onClose, egg, onUpdate, user }) {
                   value={formData.title}
                   onChange={handleChange}
                   required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
                   placeholder="e.g., Midnight Clock at 3 AM"
                 />
               </div>
@@ -212,7 +212,7 @@ export default function EditEggModal({ isOpen, onClose, egg, onUpdate, user }) {
                   name="album"
                   value={formData.album}
                   onChange={handleChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
                 >
                   <option value="">Select an album</option>
                   {albums.map((album) => (
@@ -234,7 +234,7 @@ export default function EditEggModal({ isOpen, onClose, egg, onUpdate, user }) {
                 onChange={handleChange}
                 required
                 rows={4}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
                 placeholder="Describe the Easter egg and its significance..."
               />
             </div>
@@ -248,7 +248,7 @@ export default function EditEggModal({ isOpen, onClose, egg, onUpdate, user }) {
                   name="media_type"
                   value={formData.media_type}
                   onChange={handleChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
                 >
                   <option value="">Select media type</option>
                   {mediaTypes.map((type) => (
@@ -267,7 +267,7 @@ export default function EditEggModal({ isOpen, onClose, egg, onUpdate, user }) {
                   name="clue_type"
                   value={formData.clue_type}
                   onChange={handleChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
                 >
                   <option value="">Select clue type</option>
                   {clueTypes.map((type) => (
@@ -302,7 +302,7 @@ export default function EditEggModal({ isOpen, onClose, egg, onUpdate, user }) {
                   </button>
                 </div>
               ) : (
-                <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-purple-400 transition-colors">
+                <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-orange-400 transition-colors">
                   <input
                     type="file"
                     accept="image/*"
@@ -313,7 +313,7 @@ export default function EditEggModal({ isOpen, onClose, egg, onUpdate, user }) {
                   <label htmlFor="edit-image-upload" className="cursor-pointer">
                     <Upload className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                     <p className="text-gray-600 mb-2">
-                      <span className="font-medium text-purple-600 hover:text-purple-500">
+                      <span className="font-medium text-orange-600 hover:text-orange-500">
                         Click to upload
                       </span>{" "}
                       or drag and drop
@@ -348,7 +348,7 @@ export default function EditEggModal({ isOpen, onClose, egg, onUpdate, user }) {
                   </button>
                 </div>
               ) : (
-                <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-purple-400 transition-colors">
+                <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-orange-400 transition-colors">
                   <input
                     type="file"
                     accept="video/*"
@@ -359,7 +359,7 @@ export default function EditEggModal({ isOpen, onClose, egg, onUpdate, user }) {
                   <label htmlFor="edit-video-upload" className="cursor-pointer">
                     <Upload className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                     <p className="text-gray-600 mb-2">
-                      <span className="font-medium text-purple-600 hover:text-purple-500">
+                      <span className="font-medium text-orange-600 hover:text-orange-500">
                         Click to upload
                       </span>{" "}
                       or drag and drop
@@ -384,7 +384,7 @@ export default function EditEggModal({ isOpen, onClose, egg, onUpdate, user }) {
               <button
                 type="submit"
                 disabled={isUploading}
-                className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-lg font-medium transition-colors disabled:opacity-50"
+                className="bg-orange-600 hover:bg-orange-700 text-white px-6 py-2 rounded-lg font-medium transition-colors disabled:opacity-50"
               >
                 {isUploading ? (
                   <span className="flex items-center">

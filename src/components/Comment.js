@@ -1,5 +1,5 @@
 import React, { useState } from "react"
-import { MessageCircle, Heart, Reply } from "lucide-react"
+import { Heart, Reply } from "lucide-react"
 import UserAvatar from "./UserAvatar"
 
 export default function Comment({ 
@@ -15,14 +15,7 @@ export default function Comment({
   const [replyText, setReplyText] = useState("")
   const [isSubmitting, setIsSubmitting] = useState(false)
   
-  // Debug logging
-  console.log('Comment render:', { 
-    id: comment.id, 
-    depth, 
-    hasReplies: comment.replies?.length > 0,
-    replies: comment.replies,
-    parentId: comment.parent_comment_id || comment.temp_parent_id
-  })
+
 
   const handleReply = async () => {
     if (!replyText.trim() || !currentUser) return
@@ -63,7 +56,7 @@ export default function Comment({
       )}
       <div className="flex space-x-3 mb-3">
         <UserAvatar 
-          user={{ username: comment.user?.username || comment.author || comment.username, profile_picture: comment.user?.profile_picture }} 
+          user={{ username: comment.user?.username || comment.username, profile_picture: comment.user?.profile_picture }} 
           size="sm" 
           className="flex-shrink-0" 
         />
@@ -72,7 +65,7 @@ export default function Comment({
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center space-x-2">
                 <span className="font-medium text-sm text-gray-900">
-                  {comment.user?.username || comment.author || comment.username}
+                  {comment.user?.username || comment.username}
                 </span>
                 <span className="text-xs text-gray-500">
                   {new Date(comment.created_at).toLocaleDateString('en-US', { 
@@ -137,7 +130,7 @@ export default function Comment({
             <UserAvatar user={currentUser} size="sm" className="flex-shrink-0" />
             <div className="flex-1">
               <input
-                placeholder={`Reply to ${comment.user?.username || comment.author || comment.username}...`}
+                placeholder={`Reply to ${comment.user?.username || comment.username}...`}
                 value={replyText}
                 onChange={(e) => setReplyText(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && handleReply()}

@@ -29,7 +29,7 @@ export default function EasterEggCard({
                 </span>
                 {/* Show "You" indicator for user's own posts in other tabs */}
                 {activeTab !== 'profile' && currentUser && egg.user_id === currentUser.id && (
-                  <span className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded-full">
+                  <span className="text-xs bg-orange-100 text-orange-700 px-2 py-1 rounded-full">
                     You
                   </span>
                 )}
@@ -53,7 +53,7 @@ export default function EasterEggCard({
                   e.stopPropagation()
                   onEditEgg(egg)
                 }}
-                className="text-gray-500 hover:text-purple-600 p-1 rounded transition-colors"
+                className="text-gray-500 hover:text-orange-600 p-1 rounded transition-colors"
                 title="Edit post"
               >
                 ✏️

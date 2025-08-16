@@ -16,13 +16,7 @@ export default function CommentsSection({
     <div className="border-t border-gray-200 pt-4">
       <h3 className="text-lg font-semibold mb-4 text-gray-900">Comments ({comments.length})</h3>
       
-      {/* Temporary notice about replies */}
-      <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-        <p className="text-sm text-blue-700">
-          💡 <strong>Note:</strong> Replies are currently posted as regular comments. 
-          Full nested reply functionality will be available after database updates.
-        </p>
-      </div>
+
 
       {/* Add Comment Form */}
       <div className="mb-6">

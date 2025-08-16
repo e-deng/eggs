@@ -188,10 +188,10 @@ export default function UserSettings({ isOpen, onClose, user, onUpdateUser }) {
                       id="profile-image-upload"
                     />
                     <label htmlFor="profile-image-upload" className="cursor-pointer">
-                      <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-purple-400 transition-colors">
+                      <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-orange-400 transition-colors">
                         <Upload className="h-8 w-8 text-gray-400 mx-auto mb-2" />
                         <p className="text-sm text-gray-600">
-                          <span className="font-medium text-purple-600 hover:text-purple-500">
+                          <span className="font-medium text-orange-600 hover:text-orange-500">
                             Click to upload
                           </span>
                         </p>
@@ -234,7 +234,7 @@ export default function UserSettings({ isOpen, onClose, user, onUpdateUser }) {
                   name="username"
                   value={formData.username}
                   onChange={handleChange}
-                  className={`w-full pl-10 pr-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 ${
+                  className={`w-full pl-10 pr-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 ${
                     errors.username ? 'border-red-300' : 'border-gray-300'
                   }`}
                   placeholder="Enter new username"
@@ -261,7 +261,7 @@ export default function UserSettings({ isOpen, onClose, user, onUpdateUser }) {
                     name="currentPassword"
                     value={formData.currentPassword}
                     onChange={handleChange}
-                    className={`w-full pl-10 pr-10 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 ${
+                    className={`w-full pl-10 pr-10 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 ${
                       errors.currentPassword ? 'border-red-300' : 'border-gray-300'
                     }`}
                     placeholder="Enter current password"
@@ -291,7 +291,7 @@ export default function UserSettings({ isOpen, onClose, user, onUpdateUser }) {
                     name="newPassword"
                     value={formData.newPassword}
                     onChange={handleChange}
-                    className={`w-full pl-10 pr-10 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 ${
+                    className={`w-full pl-10 pr-10 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 ${
                       errors.newPassword ? 'border-red-300' : 'border-gray-300'
                     }`}
                     placeholder="Enter new password (optional)"
@@ -321,7 +321,7 @@ export default function UserSettings({ isOpen, onClose, user, onUpdateUser }) {
                     name="confirmPassword"
                     value={formData.confirmPassword}
                     onChange={handleChange}
-                    className={`w-full pl-10 pr-10 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 ${
+                    className={`w-full pl-10 pr-10 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 ${
                       errors.confirmPassword ? 'border-red-300' : 'border-gray-300'
                     }`}
                     placeholder="Confirm new password"
@@ -354,7 +354,7 @@ export default function UserSettings({ isOpen, onClose, user, onUpdateUser }) {
               <button
                 type="submit"
                 disabled={isUploading}
-                className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-lg font-medium transition-colors disabled:opacity-50"
+                className="bg-orange-600 hover:bg-orange-700 text-white px-6 py-2 rounded-lg font-medium transition-colors disabled:opacity-50"
               >
                 {isUploading ? (
                   <span className="flex items-center">

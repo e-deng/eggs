@@ -42,7 +42,7 @@ export default function SearchFilters({
             placeholder="Search by title, description, or album..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-12 h-11 w-full bg-gray-50 border-0 rounded-full text-base focus:bg-white focus:ring-2 focus:ring-purple-500 focus:outline-none transition-all"
+            className="pl-12 h-11 w-full bg-gray-50 border-0 rounded-full text-base focus:bg-white focus:ring-2 focus:ring-orange-500 focus:outline-none transition-all"
           />
         </div>
         
@@ -53,7 +53,7 @@ export default function SearchFilters({
             <select 
               value={selectedAlbum} 
               onChange={(e) => setSelectedAlbum(e.target.value)}
-              className="px-4 py-2 bg-gray-50 border-0 rounded-full text-sm text-gray-700 focus:bg-white focus:ring-2 focus:ring-purple-500 focus:outline-none transition-all"
+              className="px-4 py-2 bg-gray-50 border-0 rounded-full text-sm text-gray-700 focus:bg-white focus:ring-2 focus:ring-orange-500 focus:outline-none transition-all"
             >
               {albums.map((album) => (
                 <option key={album} value={album}>
@@ -66,7 +66,7 @@ export default function SearchFilters({
             <select 
               value={sortBy} 
               onChange={(e) => setSortBy(e.target.value)}
-              className="px-4 py-2 bg-gray-50 border-0 rounded-full text-sm text-gray-700 focus:bg-white focus:ring-2 focus:ring-purple-500 focus:outline-none transition-all"
+              className="px-4 py-2 bg-gray-50 border-0 rounded-full text-sm text-gray-700 focus:bg-white focus:ring-2 focus:ring-orange-500 focus:outline-none transition-all"
             >
               <option value="date">Latest</option>
               <option value="upvotes">Most Liked</option>

@@ -97,7 +97,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess, mode = "logi
                 value={formData.username}
                 onChange={handleChange}
                 required
-                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
                 placeholder="Enter your username"
               />
             </div>
@@ -116,7 +116,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess, mode = "logi
                 value={formData.password}
                 onChange={handleChange}
                 required
-                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
                 placeholder="Enter your password"
               />
             </div>
