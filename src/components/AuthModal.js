@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react"
 import { X, User, Lock, LogIn, UserPlus } from "lucide-react"
-import { supabase } from "../supabaseClient"
+import { authService } from "../services/supabaseService"
 
 export default function AuthModal({ isOpen, onClose, onAuthSuccess, mode = "login" }) {
   const [isLogin, setIsLogin] = useState(mode === "login")
@@ -25,62 +25,26 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess, mode = "logi
 
     try {
       if (isLogin) {
-        // Sign in with username
-        const { data, error } = await supabase.auth.signInWithPassword({
-          email: `${formData.username}@eggs.local`, // Use username as email
-          password: formData.password
-        })
+        // Sign in with custom auth
+        const { data: user, error } = await authService.signIn(formData.username, formData.password)
 
-        if (error) throw error
+        if (error) throw new Error(error)
 
-        if (data.user) {
-          // Get user profile with username
-          const { data: profile } = await supabase
-            .from('users')
-            .select('username')
-            .eq('id', data.user.id)
-            .single()
-
-          const userWithUsername = {
-            ...data.user,
-            username: profile?.username || formData.username
-          }
-
-          localStorage.setItem("user", JSON.stringify(userWithUsername))
-          onAuthSuccess(userWithUsername)
+        if (user) {
+          localStorage.setItem("user", JSON.stringify(user))
+          onAuthSuccess(user)
           onClose()
           setFormData({ username: "", password: "" })
         }
       } else {
-        // Sign up with username
-        const { data, error } = await supabase.auth.signUp({
-          email: `${formData.username}@eggs.local`, // Use username as email
-          password: formData.password,
-          options: {
-            data: { username: formData.username }
-          }
-        })
+        // Sign up with custom auth
+        const { data: user, error } = await authService.signUp(formData.username, formData.password)
 
-        if (error) throw error
+        if (error) throw new Error(error)
 
-        if (data.user) {
-          // Create user profile
-          const { error: profileError } = await supabase
-            .from('users')
-            .insert([{
-              id: data.user.id,
-              username: formData.username
-            }])
-
-          if (profileError) throw profileError
-
-          const userWithUsername = {
-            ...data.user,
-            username: formData.username
-          }
-
-          localStorage.setItem("user", JSON.stringify(userWithUsername))
-          onAuthSuccess(userWithUsername)
+        if (user) {
+          localStorage.setItem("user", JSON.stringify(user))
+          onAuthSuccess(user)
           onClose()
           setFormData({ username: "", password: "" })
         }

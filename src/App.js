@@ -1,19 +1,18 @@
-import React, { useState, useEffect, useMemo, useCallback } from "react"
-import AddEggModal from "./components/AddEggModal"
-import AuthModal from "./components/AuthModal"
+import React, { useState, useEffect, useCallback, useMemo } from "react"
 import Header from "./components/Header"
-import AuthNotice from "./components/AuthNotice"
-import TopNavigation from "./components/TopNavigation"
-import BottomNavigation from "./components/BottomNavigation"
-import SearchFilters from "./components/SearchFilters"
 import EasterEggsGrid from "./components/EasterEggsGrid"
 import EasterEggModal from "./components/EasterEggModal"
+import AddEggModal from "./components/AddEggModal"
 import EditEggModal from "./components/EditEggModal"
+import AuthModal from "./components/AuthModal"
+import AuthNotice from "./components/AuthNotice"
 import LoginPrompt from "./components/LoginPrompt"
 import NoPostsMessage from "./components/NoPostsMessage"
-
-import { getAlbumColors } from "./utils/albumColors"
+import TopNavigation from "./components/TopNavigation"
+import BottomNavigation from "./components/BottomNavigation"
 import { easterEggsService, commentsService, likesService } from "./services/supabaseService"
+import { authService } from "./services/supabaseService"
+import { getAlbumColors } from "./utils/albumColors"
 import { supabase } from "./supabaseClient"
 
 export default function App() {
@@ -38,20 +37,18 @@ export default function App() {
   // Check if user is authenticated on app load
   const checkAuthStatus = useCallback(async () => {
     try {
-      const { data: { user }, error } = await supabase.auth.getUser()
+      const { user, error } = await authService.getCurrentUser()
       
       if (user && !error) {
         setUser(user)
         // We'll call loadUserLikes after it's defined
       } else {
         // No valid session, clear storage
-        localStorage.removeItem("sessionToken")
         localStorage.removeItem("user")
         setUser(null)
       }
     } catch (error) {
       console.error("Auth check failed:", error)
-      localStorage.removeItem("sessionToken")
       localStorage.removeItem("user")
       setUser(null)
     }
@@ -76,6 +73,10 @@ export default function App() {
   // Fetch Easter eggs on component mount - only once
   useEffect(() => {
     loadEasterEggs()
+  }, [])
+
+  // Check auth status on mount
+  useEffect(() => {
     checkAuthStatus()
   }, [checkAuthStatus])
 
@@ -85,26 +86,6 @@ export default function App() {
       loadUserLikes()
     }
   }, [user, loadUserLikes])
-
-  // Handle authentication success
-  const handleAuthSuccess = (userData) => {
-    setUser(userData)
-    loadUserLikes()
-  }
-
-  // Handle logout
-  const handleLogout = async () => {
-    try {
-      await supabase.auth.signOut()
-    } catch (error) {
-      console.error("Logout error:", error)
-    } finally {
-      localStorage.removeItem("sessionToken")
-      localStorage.removeItem("user")
-      setUser(null)
-      setUserLikes(new Set())
-    }
-  }
 
   // Load Easter eggs from Supabase
   const loadEasterEggs = async () => {
@@ -124,7 +105,13 @@ export default function App() {
     }
   }
 
-  // Load comments for a specific Easter egg
+  // Handle Easter egg click
+  const handleEggClick = async (egg) => {
+    setSelectedEgg(egg)
+    await loadComments(egg.id)
+  }
+
+  // Load comments for an Easter egg
   const loadComments = async (easterEggId) => {
     try {
       const { data: comments, error } = await commentsService.getComments(easterEggId)
@@ -137,13 +124,6 @@ export default function App() {
     } catch (error) {
       console.error("Error loading comments:", error)
     }
-  }
-
-  // Handle Easter egg click
-  const handleEggClick = async (egg) => {
-    setSelectedEgg(egg)
-    await loadComments(egg.id)
-    setNewComment("")
   }
 
   // Handle adding a comment
@@ -255,8 +235,6 @@ export default function App() {
     }
   }
 
-
-
   // Handle adding a new Easter egg
   const handleAddEgg = async (newEgg) => {
     if (!user) {
@@ -292,94 +270,93 @@ export default function App() {
     }
   }
 
+  // Handle authentication success
+  const handleAuthSuccess = (userData) => {
+    setUser(userData)
+    setIsAuthModalOpen(false)
+  }
+
+  // Handle logout
+  const handleLogout = async () => {
+    try {
+      await authService.signOut()
+      localStorage.removeItem("user")
+      setUser(null)
+      setUserLikes(new Set())
+    } catch (error) {
+      console.error("Logout error:", error)
+    }
+  }
+
   // Filter and sort Easter eggs
   const filteredAndSortedEasterEggs = useMemo(() => {
-    let filtered = easterEggs.filter((egg) => {
-      // Only apply search and album filters when on search tab
-      if (activeTab === 'search') {
-        // Only show results if there's an active search
-        if (!searchQuery.trim() && selectedAlbum === "All Albums") {
-          return false
-        }
-        
-        const matchesSearch = searchQuery.trim() === "" || 
-          egg.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          egg.description?.toLowerCase().includes(searchQuery.toLowerCase())
+    let filtered = easterEggs
 
-        const matchesAlbum = selectedAlbum === "All Albums" || egg.album === selectedAlbum
-
-        return matchesSearch && matchesAlbum
-      }
-
-      // Filter by active tab (home or profile)
-      if (activeTab === "home") {
-        return true // Show all eggs
-      } else if (activeTab === "profile") {
-        if (!user) {
-          return false // Don't show anything on profile tab if not logged in
-        }
-        return egg.user_id === user.id // Show only user's eggs
-      }
-
-      return false
-    })
-
-    // Sort based on selected criteria
-    switch (sortBy) {
-      case "upvotes":
-        return filtered.sort((a, b) => (b.upvotes_count || 0) - (a.upvotes_count || 0))
-      case "comments":
-        return filtered.sort((a, b) => (b.comments_count || 0) - (a.comments_count || 0))
-      case "date":
-      default:
-        return filtered.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+    // Filter by active tab
+    if (activeTab === 'profile' && user) {
+      filtered = filtered.filter(egg => egg.user_id === user.id)
     }
-  }, [easterEggs, searchQuery, selectedAlbum, sortBy, activeTab, user])
+
+    // Filter by search query
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase()
+      filtered = filtered.filter(egg => 
+        egg.title.toLowerCase().includes(query) ||
+        egg.description.toLowerCase().includes(query) ||
+        egg.album?.toLowerCase().includes(query)
+      )
+    }
+
+    // Filter by album
+    if (selectedAlbum !== "All Albums") {
+      filtered = filtered.filter(egg => egg.album === selectedAlbum)
+    }
+
+    // Sort
+    switch (sortBy) {
+      case "date":
+        filtered = [...filtered].sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+        break
+      case "likes":
+        filtered = [...filtered].sort((a, b) => (b.upvotes_count || 0) - (a.upvotes_count || 0))
+        break
+      case "comments":
+        filtered = [...filtered].sort((a, b) => (b.comments_count || 0) - (a.comments_count || 0))
+        break
+      default:
+        break
+    }
+
+    return filtered
+  }, [easterEggs, activeTab, user, searchQuery, selectedAlbum, sortBy])
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-50">
+    <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <Header
-        user={user}
+      <Header 
+        user={user} 
         onLogout={handleLogout}
         onOpenAuthModal={(mode) => {
           setAuthMode(mode)
           setIsAuthModalOpen(true)
         }}
-
       />
 
-      {/* Authentication Notice */}
-      {!user && (
-        <AuthNotice
-          onOpenAuthModal={(mode) => {
-            setAuthMode(mode)
-            setIsAuthModalOpen(true)
-          }}
-        />
-      )}
-
-      {/* Top Navigation for Web Users */}
-      <TopNavigation
-        activeTab={activeTab}
-        onTabChange={handleTabChange}
-        onOpenAddEggModal={() => setIsAddEggModalOpen(true)}
-        user={user}
-      />
+      {/* Auth Notice */}
+      {!user && <AuthNotice onOpenAuthModal={() => setIsAuthModalOpen(true)} />}
 
       {/* Main Content */}
-      <main className="max-w-2xl mx-auto pb-20 md:pb-0">
-        {/* Search and Filters */}
-        <SearchFilters
+      <main className="max-w-4xl mx-auto px-4 py-6">
+        {/* Top Navigation */}
+        <TopNavigation 
+          activeTab={activeTab}
+          onTabChange={handleTabChange}
           searchQuery={searchQuery}
           setSearchQuery={setSearchQuery}
           selectedAlbum={selectedAlbum}
           setSelectedAlbum={setSelectedAlbum}
           sortBy={sortBy}
           setSortBy={setSortBy}
-          getAlbumColors={getAlbumColors}
-          activeTab={activeTab}
-          filteredAndSortedEasterEggs={filteredAndSortedEasterEggs}
         />
 
         {/* Content based on active tab and authentication */}
@@ -451,22 +428,8 @@ export default function App() {
         mode={authMode}
       />
 
-      {/* Edit Easter Egg Modal */}
-      <EditEggModal
-        isOpen={isEditEggModalOpen}
-        onClose={() => {
-          setIsEditEggModalOpen(false)
-          setEditingEgg(null)
-        }}
-        egg={editingEgg}
-        onUpdate={handleUpdateEgg}
-        user={user}
-      />
-
-
-
-      {/* Bottom Navigation for Mobile Users */}
-      <BottomNavigation
+      {/* Bottom Navigation */}
+      <BottomNavigation 
         activeTab={activeTab}
         onTabChange={handleTabChange}
         onOpenAddEggModal={() => setIsAddEggModalOpen(true)}

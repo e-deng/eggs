@@ -1,48 +1,90 @@
 import { supabase } from '../supabaseClient'
 
-// Authentication
+// Simple Local Authentication Service (No database access for users)
 export const authService = {
-  // Sign up
-  async signUp(email, password, username) {
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: { username }
+  // Sign up - store user data locally only
+  async signUp(username, password) {
+    try {
+      // Check if username already exists in local storage
+      const existingUsers = JSON.parse(localStorage.getItem('users') || '[]')
+      if (existingUsers.find(u => u.username === username)) {
+        return { error: 'Username already exists' }
       }
-    })
-    return { data, error }
+
+      // Create new user (stored locally only)
+      const newUser = {
+        id: Date.now().toString(), // Simple ID generation
+        username: username,
+        password_hash: btoa(password), // Simple encoding
+        created_at: new Date().toISOString()
+      }
+
+      // Add to local storage
+      existingUsers.push(newUser)
+      localStorage.setItem('users', JSON.stringify(existingUsers))
+
+      // Return user data without password
+      const { password_hash, ...userData } = newUser
+      return { data: userData, error: null }
+    } catch (error) {
+      return { error: error.message }
+    }
   },
 
-  // Sign in
-  async signIn(email, password) {
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password
-    })
-    return { data, error }
+  // Sign in - verify against local storage only
+  async signIn(username, password) {
+    try {
+      const users = JSON.parse(localStorage.getItem('users') || '[]')
+      const user = users.find(u => u.username === username)
+
+      if (!user) {
+        return { error: 'User not found' }
+      }
+
+      // Simple password check
+      if (btoa(password) !== user.password_hash) {
+        return { error: 'Invalid password' }
+      }
+
+      // Return user data without password
+      const { password_hash, ...userData } = user
+      return { data: userData, error: null }
+    } catch (error) {
+      return { error: error.message }
+    }
   },
 
-  // Sign out
+  // Sign out - just clear local storage
   async signOut() {
-    const { error } = await supabase.auth.signOut()
-    return { error }
+    return { error: null }
   },
 
-  // Get current user
+  // Get current user - from local storage only
   async getCurrentUser() {
-    const { data: { user }, error } = await supabase.auth.getUser()
-    return { user, error }
+    try {
+      const userData = localStorage.getItem('user')
+      if (userData) {
+        return { user: JSON.parse(userData), error: null }
+      }
+      return { user: null, error: null }
+    } catch (error) {
+      return { user: null, error: error.message }
+    }
   },
 
-  // Get user profile
+  // Get user profile - from local storage
   async getUserProfile(userId) {
-    const { data, error } = await supabase
-      .from('users')
-      .select('*')
-      .eq('id', userId)
-      .single()
-    return { data, error }
+    try {
+      const users = JSON.parse(localStorage.getItem('users') || '[]')
+      const user = users.find(u => u.id === userId)
+      if (user) {
+        const { password_hash, ...userData } = user
+        return { data: userData, error: null }
+      }
+      return { data: null, error: 'User not found' }
+    } catch (error) {
+      return { data: null, error: error.message }
+    }
   }
 }
 
