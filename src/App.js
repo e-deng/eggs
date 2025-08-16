@@ -117,7 +117,7 @@ export default function App() {
       
       setEasterEggs(eggs || [])
     } catch (error) {
-      console.error("❌ Error loading Easter eggs:", error)
+      console.error("Error loading Easter eggs:", error)
       setEasterEggs([])
     } finally {
       setLoading(false)
@@ -127,17 +127,15 @@ export default function App() {
   // Load comments for a specific Easter egg
   const loadComments = async (easterEggId) => {
     try {
-      console.log("🔍 Loading comments for egg:", easterEggId)
       const { data: comments, error } = await commentsService.getComments(easterEggId)
       
       if (error) {
         throw new Error('Failed to fetch comments')
       }
       
-      console.log("✅ Loaded comments:", comments)
       setComments(comments || [])
     } catch (error) {
-      console.error("❌ Error loading comments:", error)
+      console.error("Error loading comments:", error)
     }
   }
 
@@ -162,6 +160,7 @@ export default function App() {
       const { data: comment, error } = await commentsService.addComment({
         easter_egg_id: selectedEgg.id,
         user_id: user.id,
+        username: user.username, // Add username to the comment
         content: newComment.trim()
       })
 
@@ -267,8 +266,6 @@ export default function App() {
     }
 
     try {
-      console.log("🆕 Adding new egg to Supabase:", newEgg.title || "New Egg")
-      
       // Convert FormData to regular object for Supabase
       const eggData = {
         title: newEgg.get('title'),
@@ -276,7 +273,8 @@ export default function App() {
         album: newEgg.get('album'),
         media_type: newEgg.get('media_type'),
         clue_type: newEgg.get('clue_type'),
-        user_id: user.id
+        user_id: user.id,
+        username: user.username // Add username to the egg data
       }
 
       const { data: addedEgg, error } = await easterEggsService.createEasterEgg(eggData)
@@ -286,12 +284,11 @@ export default function App() {
       }
       
       if (addedEgg) {
-        console.log("✅ Egg added to Supabase:", addedEgg)
         // Refresh the eggs list from Supabase to get the latest data
         await loadEasterEggs()
       }
     } catch (error) {
-      console.error("❌ Error adding egg:", error)
+      console.error("Error adding egg:", error)
     }
   }
 
