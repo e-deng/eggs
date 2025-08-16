@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react"
-import { X, Upload, Plus } from "lucide-react"
+import { X, Upload } from "lucide-react"
 
 export default function EditEggModal({ isOpen, onClose, egg, onUpdate, user }) {
   const [formData, setFormData] = useState({
@@ -287,6 +287,7 @@ export default function EditEggModal({ isOpen, onClose, egg, onUpdate, user }) {
               
               {imagePreview ? (
                 <div className="relative">
+                  {/* eslint-disable-next-line jsx-a11y/img-redundant-alt */}
                   <img
                     src={imagePreview}
                     alt="Current image"

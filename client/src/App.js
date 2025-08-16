@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react"
+import React, { useState, useEffect, useMemo, useCallback } from "react"
 import AddEggModal from "./components/AddEggModal"
 import AuthModal from "./components/AuthModal"
 import Header from "./components/Header"
@@ -29,20 +29,13 @@ export default function App() {
   const [loading, setLoading] = useState(true)
   const [comments, setComments] = useState([])
   const [newComment, setNewComment] = useState("")
-  const [upvotedEggs, setUpvotedEggs] = useState(new Set())
   const [sortBy, setSortBy] = useState("date")
   const [user, setUser] = useState(null)
   const [userLikes, setUserLikes] = useState(new Set())
   const [activeTab, setActiveTab] = useState("home")
 
-  // Fetch Easter eggs on component mount - only once
-  useEffect(() => {
-    loadEasterEggs()
-    checkAuthStatus()
-  }, [])
-
   // Check if user is authenticated on app load
-  const checkAuthStatus = async () => {
+  const checkAuthStatus = useCallback(async () => {
     const sessionToken = localStorage.getItem("sessionToken")
     const savedUser = localStorage.getItem("user")
     
@@ -57,7 +50,7 @@ export default function App() {
         if (response.ok) {
           const data = await response.json()
           setUser(data.user)
-          loadUserLikes()
+          // We'll call loadUserLikes after it's defined
         } else {
           // Token is invalid, clear storage
           localStorage.removeItem("sessionToken")
@@ -71,10 +64,10 @@ export default function App() {
         setUser(null)
       }
     }
-  }
+  }, [])
 
   // Load user's likes
-  const loadUserLikes = async () => {
+  const loadUserLikes = useCallback(async () => {
     if (!user) return
     
     try {
@@ -95,7 +88,20 @@ export default function App() {
     } catch (error) {
       console.error("Failed to load user likes:", error)
     }
-  }
+  }, [user, easterEggs])
+
+  // Fetch Easter eggs on component mount - only once
+  useEffect(() => {
+    loadEasterEggs()
+    checkAuthStatus()
+  }, [checkAuthStatus])
+
+  // Load user likes when user changes
+  useEffect(() => {
+    if (user) {
+      loadUserLikes()
+    }
+  }, [user, loadUserLikes])
 
   // Handle authentication success
   const handleAuthSuccess = (userData) => {
