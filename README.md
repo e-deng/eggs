@@ -85,6 +85,8 @@ The Express server provides these RESTful endpoints:
 - **Real-time Updates**: Comments and interactions update instantly
 - **Search & Filter**: Find Easter eggs by album, media type, or keywords
 - **Interactive Modals**: Detailed views with comment sections
+- **Nested Comments**: Reply to comments with unlimited nesting levels
+- **Comment Upvotes**: Like and upvote individual comments
 - **Modern UI**: Built with Tailwind CSS for a polished look
 
 ## 🗄️ Database Schema
@@ -112,9 +114,23 @@ CREATE TABLE easter_eggs (
 CREATE TABLE comments (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   easter_egg_id UUID REFERENCES easter_eggs(id) ON DELETE CASCADE,
+  parent_comment_id UUID REFERENCES comments(id) ON DELETE CASCADE,
   content TEXT NOT NULL,
-  author TEXT NOT NULL,
+  username TEXT NOT NULL,
+  user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+  upvotes_count INTEGER DEFAULT 0,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+```
+
+### Comment Likes Table
+```sql
+CREATE TABLE comment_likes (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  comment_id UUID REFERENCES comments(id) ON DELETE CASCADE,
+  user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  UNIQUE(comment_id, user_id)
 );
 ```
 

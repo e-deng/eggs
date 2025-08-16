@@ -1,5 +1,5 @@
 import React from "react"
-import { TrendingUp, MessageCircle } from "lucide-react"
+import { HeartIcon, MessageCircle } from "lucide-react"
 import UserAvatar from "./UserAvatar"
 
 export default function EasterEggCard({ 
@@ -103,7 +103,7 @@ export default function EasterEggCard({
             <button
               className={`flex items-center space-x-2 text-sm transition-colors ${
                 userLikes.has(egg.id) 
-                  ? 'text-red-500' 
+                  ? 'text-orange-500' 
                   : 'text-gray-500 hover:text-red-500'
               }`}
               onClick={(e) => {
@@ -111,7 +111,7 @@ export default function EasterEggCard({
                 onVote(egg.id, 'upvote')
               }}
             >
-              <TrendingUp className={`h-5 w-5 ${userLikes.has(egg.id) ? 'fill-current' : ''}`} />
+              <HeartIcon className={`h-5 w-5 ${userLikes.has(egg.id) ? 'fill-current' : ''}`} />
               <span>{egg.upvotes_count || 0}</span>
             </button>
             

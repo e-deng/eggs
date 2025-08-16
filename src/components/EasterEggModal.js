@@ -1,5 +1,5 @@
 import React from "react"
-import { TrendingUp, MessageCircle } from "lucide-react"
+import { HeartIcon, MessageCircle } from "lucide-react"
 import CommentsSection from "./CommentsSection"
 import UserAvatar from "./UserAvatar"
 
@@ -12,7 +12,10 @@ export default function EasterEggModal({
   onAddComment, 
   onVote, 
   userLikes, 
-  getAlbumColors 
+  getAlbumColors,
+  currentUser,
+  onReply,
+  onUpvote
 }) {
   if (!selectedEgg) return null
 
@@ -103,11 +106,11 @@ export default function EasterEggModal({
                 onClick={() => onVote(selectedEgg.id, 'upvote')}
                 className={`flex items-center space-x-2 transition-colors ${
                   userLikes.has(selectedEgg.id)
-                    ? 'text-red-500' 
+                    ? 'text-orange-500' 
                     : 'text-gray-500 hover:text-red-500'
                 }`}
               >
-                <TrendingUp className={`h-5 w-5 ${userLikes.has(selectedEgg.id) ? 'fill-current' : ''}`} />
+                <HeartIcon className={`h-5 w-5 ${userLikes.has(selectedEgg.id) ? 'fill-current' : ''}`} />
                 <span className="text-sm font-medium">{selectedEgg.upvotes_count || 0} likes</span>
               </button>
               <div className="flex items-center space-x-2 text-gray-500">
@@ -122,6 +125,9 @@ export default function EasterEggModal({
               newComment={newComment}
               setNewComment={setNewComment}
               onAddComment={onAddComment}
+              currentUser={currentUser}
+              onReply={onReply}
+              onUpvote={onUpvote}
             />
           </div>
         </div>

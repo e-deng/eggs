@@ -12,7 +12,7 @@ import TopNavigation from "./components/TopNavigation"
 import BottomNavigation from "./components/BottomNavigation"
 import Footer from "./components/Footer"
 import MobileUserProfile from "./components/MobileUserProfile"
-import { easterEggsService, commentsService, likesService } from "./services/supabaseService"
+import { easterEggsService, commentsService, likesService, commentLikesService } from "./services/supabaseService"
 import { authService } from "./services/supabaseService"
 import { getAlbumColors } from "./utils/albumColors"
 import { supabase } from "./supabaseClient"
@@ -117,7 +117,7 @@ export default function App() {
   // Load comments for an Easter egg
   const loadComments = async (easterEggId) => {
     try {
-      const { data: comments, error } = await commentsService.getComments(easterEggId)
+      const { data: comments, error } = await commentsService.getComments(easterEggId, user?.id)
       
       if (error) {
         throw new Error('Failed to fetch comments')
@@ -143,7 +143,7 @@ export default function App() {
       const { data: comment, error } = await commentsService.addComment({
         easter_egg_id: selectedEgg.id,
         user_id: user.id,
-        username: user.username, // Add username to the comment
+        username: user.username, // Use 'username' field as per actual database schema
         content: newComment.trim()
       })
 
@@ -200,6 +200,66 @@ export default function App() {
       await loadEasterEggs()
     } catch (error) {
       console.error("Error updating like:", error)
+    }
+  }
+
+  // Handle adding a reply to a comment
+  const handleAddReply = async (parentCommentId, replyText) => {
+    if (!user) {
+      setIsAuthModalOpen(true)
+      setAuthMode("login")
+      return
+    }
+
+    if (!replyText.trim() || !selectedEgg) return
+
+    try {
+      const { data: reply, error } = await commentsService.addReply(parentCommentId, {
+        easter_egg_id: selectedEgg.id,
+        user_id: user.id,
+        username: user.username, // Use 'username' field as per actual database schema
+        content: replyText.trim()
+      })
+
+      if (error) {
+        throw new Error("Failed to add reply")
+      }
+
+      // Refresh comments to get the updated structure
+      await loadComments(selectedEgg.id)
+
+      // Refresh the Easter eggs list to update comment count
+      await loadEasterEggs()
+      
+      // Also refresh the selected egg
+      const updatedEgg = easterEggs.find(egg => egg.id === selectedEgg.id)
+      if (updatedEgg) {
+        setSelectedEgg(updatedEgg)
+      }
+    } catch (error) {
+      console.error("Error adding reply:", error)
+    }
+  }
+
+  // Handle comment upvote/downvote
+  const handleCommentUpvote = async (commentId) => {
+    if (!user) {
+      setIsAuthModalOpen(true)
+      setAuthMode("login")
+      return
+    }
+
+    try {
+      const { error } = await commentLikesService.toggleCommentLike(user.id, commentId)
+      
+      if (error) {
+        throw new Error('Failed to update comment like')
+      }
+
+      // Refresh comments to get updated upvote counts
+      await loadComments(selectedEgg.id)
+    } catch (error) {
+      console.error("Error updating comment like:", error)
     }
   }
 
@@ -476,6 +536,9 @@ export default function App() {
           onVote={handleVote}
           userLikes={userLikes}
           getAlbumColors={getAlbumColors}
+          currentUser={user}
+          onReply={handleAddReply}
+          onUpvote={handleCommentUpvote}
         />
       )}
 

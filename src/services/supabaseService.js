@@ -162,35 +162,161 @@ export const easterEggsService = {
 
 // Comments Service - saves to Supabase using app's service account
 export const commentsService = {
-  // Get comments for an easter egg
-  async getComments(easterEggId) {
-    const { data, error } = await supabase
-      .from('comments')
-      .select('*')
-      .eq('easter_egg_id', easterEggId)
-      .order('created_at', { ascending: true })
-    return { data, error }
+  // Get comments for an easter egg with nested replies
+  async getComments(easterEggId, currentUserId = null) {
+    try {
+      // First get all comments for this easter egg
+      const { data: allComments, error } = await supabase
+        .from('comments')
+        .select('*')
+        .eq('easter_egg_id', easterEggId)
+        .order('created_at', { ascending: false }) // Newest comments first
+      
+      if (error) {
+        console.error('Error fetching comments:', error)
+        return { data: null, error }
+      }
+      
+      // Handle case where no comments exist
+      if (!allComments || allComments.length === 0) {
+        return { data: [], error: null }
+      }
+      
+      // Get user's comment likes if user is logged in
+      let userCommentLikes = []
+      if (currentUserId) {
+        try {
+          const { commentLikesService } = await import('./supabaseService.js')
+          const { data: likes } = await commentLikesService.getUserCommentLikes(currentUserId)
+          userCommentLikes = likes || []
+        } catch (error) {
+          console.error('Error fetching user comment likes:', error)
+        }
+      }
+      
+      // Organize comments into a tree structure
+      const commentsMap = new Map()
+      const rootComments = []
+      
+      console.log('Processing comments:', allComments)
+      
+      // First pass: create a map of all comments
+      allComments.forEach(comment => {
+        const isLikedByUser = userCommentLikes.some(like => like.comment_id === comment.id)
+        commentsMap.set(comment.id, {
+          ...comment,
+          replies: [],
+          upvotes_count: comment.upvotes_count || 0,
+          parent_comment_id: comment.parent_comment_id || null,
+          user: { username: comment.username, profile_picture: null },
+          user_likes: isLikedByUser ? [{ user_id: currentUserId }] : []
+        })
+      })
+      
+      // Fetch real-time upvote counts from comment_likes table
+      // This gives us accurate counts even without the upvotes_count column
+      for (const comment of allComments) {
+        try {
+          // Import the service dynamically to avoid circular dependencies
+          const { commentLikesService } = await import('./supabaseService.js')
+          const realUpvoteCount = await commentLikesService.getCommentUpvoteCount(comment.id)
+          const commentInMap = commentsMap.get(comment.id)
+          if (commentInMap) {
+            commentInMap.upvotes_count = realUpvoteCount
+          }
+        } catch (error) {
+          console.error(`Error fetching upvote count for comment ${comment.id}:`, error)
+        }
+      }
+      
+      // Second pass: organize into tree structure
+      allComments.forEach(comment => {
+        if (comment.parent_comment_id && comment.parent_comment_id !== null) {
+          // This is a reply
+          const parentComment = commentsMap.get(comment.parent_comment_id)
+          if (parentComment) {
+            parentComment.replies.push(commentsMap.get(comment.id))
+          } else {
+            // Parent comment not found, treat as root comment
+            rootComments.push(commentsMap.get(comment.id))
+          }
+        } else {
+          // This is a root comment
+          rootComments.push(commentsMap.get(comment.id))
+        }
+      })
+      
+      // Sort replies by newest first within each comment
+      rootComments.forEach(comment => {
+        if (comment.replies && comment.replies.length > 0) {
+          comment.replies.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+        }
+      })
+      
+      console.log('Processed comments:', rootComments)
+      return { data: rootComments, error: null }
+    } catch (error) {
+      return { data: null, error: error.message }
+    }
   },
 
   // Add comment - saves to Supabase with user info
   async addComment(commentData) {
-    const { data, error } = await supabase
-      .from('comments')
-      .insert([commentData])
-    
-    if (error) {
-      return { data: null, error }
+    try {
+      const { data, error } = await supabase
+        .from('comments')
+        .insert([commentData])
+      
+      if (error) {
+        return { data: null, error }
+      }
+      
+      // Return the comment data with a generated id for immediate use
+      // The actual id will be fetched when we reload comments
+      return { 
+        data: {
+          ...commentData,
+          id: `temp-${Date.now()}`,
+          created_at: new Date().toISOString(),
+          replies: [],
+          user: { username: commentData.username, profile_picture: null }
+        }, 
+        error: null 
+      }
+    } catch (error) {
+      return { data: null, error: error.message }
     }
-    
-    // Return the comment data with a generated id for immediate use
-    // The actual id will be fetched when we reload comments
-    return { 
-      data: {
-        ...commentData,
-        id: `temp-${Date.now()}`,
-        created_at: new Date().toISOString()
-      }, 
-      error: null 
+  },
+
+  // Add reply to a comment
+  async addReply(parentCommentId, replyData) {
+    try {
+      // For now, just create a regular comment since parent_comment_id column doesn't exist yet
+      // This will be updated once the database migration is run
+      console.log('Creating reply as regular comment (parent_comment_id not supported yet)')
+      
+      const { data, error } = await supabase
+        .from('comments')
+        .insert([replyData])
+      
+      if (error) {
+        console.error('Error creating reply:', error)
+        return { data: null, error }
+      }
+      
+              return { 
+          data: {
+            ...replyData,
+            id: `temp-${Date.now()}`,
+            created_at: new Date().toISOString(),
+            replies: [],
+            user: { username: replyData.username, profile_picture: null }
+          }, 
+          error: null 
+        }
+    } catch (error) {
+      console.error('Error in addReply:', error)
+      return { data: null, error: error.message }
     }
   }
 }
@@ -317,5 +443,139 @@ export const storageService = {
       .from(bucket)
       .upload(path, file)
     return { data, error }
+  }
+}
+
+// Comment Likes Service - handles comment upvotes
+export const commentLikesService = {
+  // Get user's comment likes
+  async getUserCommentLikes(userId) {
+    try {
+      const { data, error } = await supabase
+        .from('comment_likes')
+        .select('comment_id')
+        .eq('user_id', userId)
+      
+      if (error) {
+        console.error('Error fetching user comment likes:', error)
+        return { data: [], error }
+      }
+      
+      return { data: data || [], error: null }
+    } catch (error) {
+      console.error('Error in getUserCommentLikes:', error)
+      return { data: [], error: error.message }
+    }
+  },
+
+  // Get actual upvote count for a comment from comment_likes table
+  async getCommentUpvoteCount(commentId) {
+    try {
+      const { count, error } = await supabase
+        .from('comment_likes')
+        .select('*', { count: 'exact', head: true })
+        .eq('comment_id', commentId)
+      
+      if (error) {
+        console.error('Error fetching comment upvote count:', error)
+        return 0
+      }
+      
+      return count || 0
+    } catch (error) {
+      console.error('Error in getCommentUpvoteCount:', error)
+      return 0
+    }
+  },
+
+  // Toggle comment like
+  async toggleCommentLike(userId, commentId) {
+    try {
+      // Check if already liked
+      const { count, error: checkError } = await supabase
+        .from('comment_likes')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', userId)
+        .eq('comment_id', commentId)
+
+      if (checkError) {
+        console.error('Error checking existing comment like:', checkError)
+        return { error: 'Failed to check like status', liked: false }
+      }
+
+      const alreadyLiked = count > 0
+
+      if (alreadyLiked) {
+        // Unlike
+        const { error } = await supabase
+          .from('comment_likes')
+          .delete()
+          .eq('user_id', userId)
+          .eq('comment_id', commentId)
+        
+        if (error) {
+          console.error('Error removing comment like:', error)
+          return { error: 'Failed to remove like', liked: false }
+        }
+        
+        // Update the upvotes count in comments table
+        await this.updateCommentUpvotesCount(commentId, -1)
+        
+        return { error: null, liked: false }
+      } else {
+        // Like
+        const { error } = await supabase
+          .from('comment_likes')
+          .insert([{
+            user_id: userId,
+            comment_id: commentId
+          }])
+        
+        if (error) {
+          console.error('Error adding comment like:', error)
+          return { error: 'Failed to add like', liked: false }
+        }
+        
+        // Update the upvotes count in comments table
+        await this.updateCommentUpvotesCount(commentId, 1)
+        
+        return { error: null, liked: true }
+      }
+    } catch (error) {
+      console.error('Error in toggleCommentLike:', error)
+      return { error: 'Failed to toggle like', liked: false }
+    }
+  },
+
+  // Update the upvotes count in comments table
+  async updateCommentUpvotesCount(commentId, increment) {
+    try {
+      // For now, we'll skip updating the upvotes_count column since it doesn't exist yet
+      // The real-time count will be fetched from comment_likes table instead
+      console.log(`Would update comment ${commentId} upvotes count by ${increment} (column not available yet)`)
+      return
+    } catch (error) {
+      console.error('Error in updateCommentUpvotesCount:', error)
+    }
+  },
+
+  // Get real-time upvote count for a comment from comment_likes table
+  async getCommentUpvoteCount(commentId) {
+    try {
+      const { count, error } = await supabase
+        .from('comment_likes')
+        .select('*', { count: 'exact', head: true })
+        .eq('comment_id', commentId)
+      
+      if (error) {
+        console.error('Error fetching comment upvote count:', error)
+        return 0
+      }
+      
+      return count || 0
+    } catch (error) {
+      console.error('Error in getCommentUpvoteCount:', error)
+      return 0
+    }
   }
 } 
