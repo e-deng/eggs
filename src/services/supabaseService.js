@@ -1,48 +1,62 @@
 import { supabase } from '../supabaseClient'
+import bcrypt from 'bcryptjs'
 
-// Simple Local Authentication Service (No database access for users)
+// Authentication Service using existing Supabase users table
 export const authService = {
-  // Sign up - store user data locally only
+  // Sign up - create user in users table, but no Supabase auth account
   async signUp(username, password) {
     try {
-      // Check if username already exists in local storage
-      const existingUsers = JSON.parse(localStorage.getItem('users') || '[]')
-      if (existingUsers.find(u => u.username === username)) {
+      // Check if username already exists in users table
+      const { data: existingUser } = await supabase
+        .from('users')
+        .select('username')
+        .eq('username', username)
+        .single()
+
+      if (existingUser) {
         return { error: 'Username already exists' }
       }
 
-      // Create new user (stored locally only)
-      const newUser = {
-        id: Date.now().toString(), // Simple ID generation
-        username: username,
-        password_hash: btoa(password), // Simple encoding
-        created_at: new Date().toISOString()
-      }
+      // Hash password using bcrypt
+      const passwordHash = await this.hashPassword(password)
 
-      // Add to local storage
-      existingUsers.push(newUser)
-      localStorage.setItem('users', JSON.stringify(existingUsers))
+      // Create new user in users table (no Supabase auth account)
+      const { data, error } = await supabase
+        .from('users')
+        .insert([{
+          username: username,
+          password_hash: passwordHash,
+          created_at: new Date().toISOString()
+        }])
+        .select()
+        .single()
+
+      if (error) return { error: error.message }
 
       // Return user data without password
-      const { password_hash, ...userData } = newUser
+      const { password_hash, ...userData } = data
       return { data: userData, error: null }
     } catch (error) {
       return { error: error.message }
     }
   },
 
-  // Sign in - verify against local storage only
+  // Sign in - verify against users table
   async signIn(username, password) {
     try {
-      const users = JSON.parse(localStorage.getItem('users') || '[]')
-      const user = users.find(u => u.username === username)
+      const { data: user, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('username', username)
+        .single()
 
-      if (!user) {
+      if (error || !user) {
         return { error: 'User not found' }
       }
 
-      // Simple password check
-      if (btoa(password) !== user.password_hash) {
+      // Verify password using bcrypt
+      const isValidPassword = await this.verifyPassword(password, user.password_hash)
+      if (!isValidPassword) {
         return { error: 'Invalid password' }
       }
 
@@ -72,23 +86,29 @@ export const authService = {
     }
   },
 
-  // Get user profile - from local storage
+  // Get user profile - from users table
   async getUserProfile(userId) {
-    try {
-      const users = JSON.parse(localStorage.getItem('users') || '[]')
-      const user = users.find(u => u.id === userId)
-      if (user) {
-        const { password_hash, ...userData } = user
-        return { data: userData, error: null }
-      }
-      return { data: null, error: 'User not found' }
-    } catch (error) {
-      return { data: null, error: error.message }
-    }
+    const { data, error } = await supabase
+      .from('users')
+      .select('*')
+      .eq('id', userId)
+      .single()
+    return { data, error }
+  },
+
+  // Helper function to hash password using bcrypt
+  async hashPassword(password) {
+    const saltRounds = 10
+    return await bcrypt.hash(password, saltRounds)
+  },
+
+  // Helper function to verify password using bcrypt
+  async verifyPassword(password, hash) {
+    return await bcrypt.compare(password, hash)
   }
 }
 
-// Easter Eggs
+// Easter Eggs Service - saves to Supabase using app's service account
 export const easterEggsService = {
   // Get all easter eggs
   async getAllEasterEggs() {
@@ -109,7 +129,7 @@ export const easterEggsService = {
     return { data, error }
   },
 
-  // Create easter egg
+  // Create easter egg - saves to Supabase with user info
   async createEasterEgg(eggData) {
     const { data, error } = await supabase
       .from('easter_eggs')
@@ -138,7 +158,7 @@ export const easterEggsService = {
   }
 }
 
-// Comments
+// Comments Service - saves to Supabase using app's service account
 export const commentsService = {
   // Get comments for an easter egg
   async getComments(easterEggId) {
@@ -150,7 +170,7 @@ export const commentsService = {
     return { data, error }
   },
 
-  // Add comment
+  // Add comment - saves to Supabase with user info
   async addComment(commentData) {
     const { data, error } = await supabase
       .from('comments')
@@ -160,7 +180,7 @@ export const commentsService = {
   }
 }
 
-// Likes
+// Likes Service - saves to Supabase using app's service account
 export const likesService = {
   // Get user likes
   async getUserLikes(userId) {
@@ -171,7 +191,7 @@ export const likesService = {
     return { data, error }
   },
 
-  // Toggle like
+  // Toggle like - saves to Supabase
   async toggleLike(userId, easterEggId) {
     // Check if already liked
     const { data: existingLike } = await supabase
@@ -202,7 +222,7 @@ export const likesService = {
   }
 }
 
-// Storage (for images/videos)
+// Storage Service - for images/videos (using app's service account)
 export const storageService = {
   // Upload file
   async uploadFile(bucket, path, file) {
@@ -210,21 +230,5 @@ export const storageService = {
       .from(bucket)
       .upload(path, file)
     return { data, error }
-  },
-
-  // Get public URL
-  getPublicUrl(bucket, path) {
-    const { data } = supabase.storage
-      .from(bucket)
-      .getPublicUrl(path)
-    return data.publicUrl
-  },
-
-  // Delete file
-  async deleteFile(bucket, path) {
-    const { error } = await supabase.storage
-      .from(bucket)
-      .remove([path])
-    return { error }
   }
 } 
