@@ -1,7 +1,7 @@
 import React from "react"
 import { X, User, LogOut } from "lucide-react"
 
-export default function MobileUserProfile({ isOpen, onClose, user, onLogout, onOpenUserSettings }) {
+export default function MobileUserProfile({ isOpen, onClose, user, onLogout }) {
   if (!isOpen) return null
 
   return (
@@ -31,10 +31,8 @@ export default function MobileUserProfile({ isOpen, onClose, user, onLogout, onO
           </div>
         </div>
 
-        {/* Actions */}
+                {/* Actions */}
         <div className="p-4 space-y-2">
-         
-          
           <button
             onClick={onLogout}
             className="w-full flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-50 transition-colors text-left"

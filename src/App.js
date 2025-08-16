@@ -16,6 +16,7 @@ import { easterEggsService, commentsService, likesService, commentLikesService }
 import { authService } from "./services/supabaseService"
 import { getAlbumColors } from "./utils/albumColors"
 
+
 export default function App() {
   const [easterEggs, setEasterEggs] = useState([])
   const [selectedEgg, setSelectedEgg] = useState(null)
@@ -382,11 +383,8 @@ export default function App() {
     setIsMobileProfileOpen(true)
   }
 
-  // Handle opening user settings
-  const handleOpenUserSettings = () => {
-    // TODO: Implement user settings modal
-    setIsMobileProfileOpen(false)
-  }
+
+
 
   // Filter and sort Easter eggs
   const filteredAndSortedEasterEggs = useMemo(() => {
@@ -441,15 +439,15 @@ export default function App() {
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       {/* Header */}
-      <Header 
-        user={user} 
-        onLogout={handleLogout}
-        onOpenAuthModal={(mode) => {
-          setAuthMode(mode)
-          setIsAuthModalOpen(true)
-        }}
-        onOpenUserProfile={handleOpenMobileProfile}
-      />
+              <Header
+          user={user}
+          onLogout={handleLogout}
+          onOpenAuthModal={(mode) => {
+            setAuthMode(mode)
+            setIsAuthModalOpen(true)
+          }}
+          onOpenUserProfile={handleOpenMobileProfile}
+        />
 
       {/* Auth Notice */}
       {!user && <AuthNotice onOpenAuthModal={() => setIsAuthModalOpen(true)} />}
@@ -594,8 +592,8 @@ export default function App() {
         onClose={() => setIsMobileProfileOpen(false)}
         user={user}
         onLogout={handleLogout}
-        onOpenUserSettings={handleOpenUserSettings}
       />
+
 
       {/* Bottom Navigation */}
       <BottomNavigation 
