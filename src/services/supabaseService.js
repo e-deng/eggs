@@ -302,7 +302,7 @@ export const commentsService = {
   // Add comment - saves to Supabase with user info
   async addComment(commentData) {
     try {
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from('comments')
         .insert([commentData])
       
@@ -354,7 +354,7 @@ export const commentsService = {
         content: replyContent
       }
       
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from('comments')
         .insert([replyDataWithPrefix])
       
@@ -609,13 +609,9 @@ export const commentLikesService = {
 
   // Update the upvotes count in comments table
   async updateCommentUpvotesCount(commentId, increment) {
-    try {
-      // For now, we'll skip updating the upvotes_count column since it doesn't exist yet
-      // The real-time count will be fetched from comment_likes table instead
-      return
-    } catch (error) {
-      console.error('Error in updateCommentUpvotesCount:', error)
-    }
+    // For now, we'll skip updating the upvotes_count column since it doesn't exist yet
+    // The real-time count will be fetched from comment_likes table instead
+    return
   }
 
 } 

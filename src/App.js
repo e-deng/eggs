@@ -305,7 +305,7 @@ export default function App() {
         eggData.video_url = null
       }
       
-      const { data, error } = await easterEggsService.updateEasterEgg(eggId, eggData)
+      const { error } = await easterEggsService.updateEasterEgg(eggId, eggData)
       
       if (error) {
         throw new Error('Failed to update Easter egg')
