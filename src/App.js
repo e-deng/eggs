@@ -295,22 +295,30 @@ export default function App() {
     // Filter by active tab
     if (activeTab === 'profile' && user) {
       filtered = filtered.filter(egg => egg.user_id === user.id)
+    } else if (activeTab === 'favorites' && user) {
+      // Show only liked posts
+      filtered = filtered.filter(egg => userLikes.has(egg.id))
+    } else if (activeTab === 'search') {
+      // Only show results if there's an active search
+      if (!searchQuery.trim() && selectedAlbum === "All Albums") {
+        return []
+      }
+      
+      // Apply search and album filters
+      if (searchQuery.trim()) {
+        const query = searchQuery.toLowerCase()
+        filtered = filtered.filter(egg => 
+          egg.title.toLowerCase().includes(query) ||
+          egg.description.toLowerCase().includes(query) ||
+          egg.album?.toLowerCase().includes(query)
+        )
+      }
+      
+      if (selectedAlbum !== "All Albums") {
+        filtered = filtered.filter(egg => egg.album === selectedAlbum)
+      }
     }
-
-    // Filter by search query
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase()
-      filtered = filtered.filter(egg => 
-        egg.title.toLowerCase().includes(query) ||
-        egg.description.toLowerCase().includes(query) ||
-        egg.album?.toLowerCase().includes(query)
-      )
-    }
-
-    // Filter by album
-    if (selectedAlbum !== "All Albums") {
-      filtered = filtered.filter(egg => egg.album === selectedAlbum)
-    }
+    // Home tab shows all eggs without filtering
 
     // Sort
     switch (sortBy) {
@@ -328,7 +336,7 @@ export default function App() {
     }
 
     return filtered
-  }, [easterEggs, activeTab, user, searchQuery, selectedAlbum, sortBy])
+  }, [easterEggs, activeTab, user, userLikes, searchQuery, selectedAlbum, sortBy])
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -351,6 +359,8 @@ export default function App() {
         <TopNavigation 
           activeTab={activeTab}
           onTabChange={handleTabChange}
+          onOpenAddEggModal={() => setIsAddEggModalOpen(true)}
+          user={user}
           searchQuery={searchQuery}
           setSearchQuery={setSearchQuery}
           selectedAlbum={selectedAlbum}
@@ -376,11 +386,45 @@ export default function App() {
               setIsAuthModalOpen(true)
             }}
           />
+        ) : activeTab === 'favorites' && !user ? (
+          <LoginPrompt 
+            message="Please log in or create an account to view your favorites!"
+            onOpenAuthModal={(mode) => {
+              setAuthMode(mode)
+              setIsAuthModalOpen(true)
+            }}
+          />
         ) : activeTab === 'profile' && user && !loading && filteredAndSortedEasterEggs.length === 0 ? (
           /* No Posts Message */
           <NoPostsMessage 
             onOpenAddEggModal={() => setIsAddEggModalOpen(true)}
           />
+        ) : activeTab === 'favorites' && user && !loading && filteredAndSortedEasterEggs.length === 0 ? (
+          /* No Favorites Message */
+          <div className="text-center py-16 px-4">
+            <div className="mx-auto w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mb-6">
+              <span className="text-2xl">💔</span>
+            </div>
+            <h3 className="text-xl font-semibold mb-2 text-gray-900">
+              No favorites yet
+            </h3>
+            <p className="text-gray-600 mb-8 max-w-md mx-auto">
+              Like some Easter eggs to see them here!
+            </p>
+          </div>
+        ) : activeTab === 'search' && !searchQuery.trim() && selectedAlbum === "All Albums" ? (
+          /* Search Prompt */
+          <div className="text-center py-16 px-4">
+            <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-6">
+              <span className="text-2xl">🔍</span>
+            </div>
+            <h3 className="text-xl font-semibold mb-2 text-gray-900">
+              Start searching
+            </h3>
+            <p className="text-gray-600 mb-8 max-w-md mx-auto">
+              Use the search bar above to find Easter eggs by title, description, or album!
+            </p>
+          </div>
         ) : (
           /* Easter Eggs Grid */
           <EasterEggsGrid

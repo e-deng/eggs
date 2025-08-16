@@ -184,40 +184,73 @@ export const commentsService = {
 export const likesService = {
   // Get user likes
   async getUserLikes(userId) {
-    const { data, error } = await supabase
-      .from('user_likes')
-      .select('easter_egg_id')
-      .eq('user_id', userId)
-    return { data, error }
+    try {
+      const { data, error } = await supabase
+        .from('user_likes')
+        .select('easter_egg_id')
+        .eq('user_id', userId)
+      
+      if (error) {
+        console.error('Error fetching user likes:', error)
+        return { data: [], error }
+      }
+      
+      return { data: data || [], error: null }
+    } catch (error) {
+      console.error('Error in getUserLikes:', error)
+      return { data: [], error: error.message }
+    }
   },
 
   // Toggle like - saves to Supabase
   async toggleLike(userId, easterEggId) {
-    // Check if already liked
-    const { data: existingLike } = await supabase
-      .from('user_likes')
-      .select('*')
-      .eq('user_id', userId)
-      .eq('easter_egg_id', easterEggId)
-      .single()
-
-    if (existingLike) {
-      // Unlike
-      const { error } = await supabase
+    try {
+      // Check if already liked
+      const { data: existingLike, error: checkError } = await supabase
         .from('user_likes')
-        .delete()
+        .select('*')
         .eq('user_id', userId)
         .eq('easter_egg_id', easterEggId)
-      return { error, liked: false }
-    } else {
-      // Like
-      const { error } = await supabase
-        .from('user_likes')
-        .insert([{
-          user_id: userId,
-          easter_egg_id: easterEggId
-        }])
-      return { error, liked: true }
+        .single()
+
+      if (checkError && checkError.code !== 'PGRST116') {
+        console.error('Error checking existing like:', checkError)
+        return { error: 'Failed to check like status', liked: false }
+      }
+
+      if (existingLike) {
+        // Unlike
+        const { error } = await supabase
+          .from('user_likes')
+          .delete()
+          .eq('user_id', userId)
+          .eq('easter_egg_id', easterEggId)
+        
+        if (error) {
+          console.error('Error removing like:', error)
+          return { error: 'Failed to remove like', liked: false }
+        }
+        
+        return { error: null, liked: false }
+      } else {
+        // Like
+        const { error } = await supabase
+          .from('user_likes')
+          .insert([{
+            user_id: userId,
+            easter_egg_id: easterEggId
+          }])
+        
+        if (error) {
+          console.error('Error adding like:', error)
+          return { error: 'Failed to add like', liked: false }
+        }
+        
+        return { error: null, liked: true }
+      }
+    } catch (error) {
+      console.error('Error in toggleLike:', error)
+      return { error: 'Failed to toggle like', liked: false }
     }
   }
 }
