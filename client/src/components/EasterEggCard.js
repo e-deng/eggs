@@ -21,11 +21,11 @@ export default function EasterEggCard({
         {/* Header with user info and date */}
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center space-x-3">
-            <UserAvatar user={egg.user} size="sm" />
+                          <UserAvatar user={{ username: egg.username, id: egg.user_id }} size="sm" />
             <div>
               <div className="flex items-center space-x-2">
                 <span className="font-medium text-gray-900">
-                  {egg.user?.username || 'Anonymous Hunter'}
+                  {egg.username || 'Anonymous Hunter'}
                 </span>
                 {/* Show "You" indicator for user's own posts in other tabs */}
                 {activeTab !== 'profile' && currentUser && egg.user_id === currentUser.id && (

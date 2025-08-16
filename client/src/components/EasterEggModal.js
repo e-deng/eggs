@@ -34,10 +34,10 @@ export default function EasterEggModal({
           <div className="p-4 sm:p-6">
             {/* User info and date */}
             <div className="flex items-center space-x-3 mb-4">
-              <UserAvatar user={selectedEgg.user} size="sm" />
+              <UserAvatar user={{ username: selectedEgg.username, id: selectedEgg.user_id }} size="sm" />
               <div>
                 <div className="font-medium text-gray-900">
-                  {selectedEgg.user?.username || 'Anonymous Hunter'}
+                  {selectedEgg.username || 'Anonymous Hunter'}
                 </div>
                 <div className="text-sm text-gray-500">
                   {new Date(selectedEgg.created_at).toLocaleDateString('en-US', { 

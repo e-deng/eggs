@@ -7,7 +7,7 @@ export default function BottomNavigation({
   onOpenAddEggModal,
   user 
 }) {
-  if (!user) return null
+
 
   return (
     <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50">
@@ -40,10 +40,16 @@ export default function BottomNavigation({
 
         {/* Post Tab */}
         <button
-          onClick={onOpenAddEggModal}
-          className="flex flex-col items-center py-2 px-4 rounded-lg transition-colors text-purple-600 hover:bg-purple-50"
+          onClick={user ? onOpenAddEggModal : () => onTabChange('post')}
+          className={`flex flex-col items-center py-2 px-4 rounded-lg transition-colors ${
+            user 
+              ? 'text-purple-600 hover:bg-purple-50' 
+              : 'text-gray-400'
+          }`}
         >
-          <div className="w-6 h-6 bg-purple-600 rounded-full flex items-center justify-center">
+          <div className={`w-6 h-6 rounded-full flex items-center justify-center ${
+            user ? 'bg-purple-600' : 'bg-gray-400'
+          }`}>
             <Plus className="h-4 w-4 text-white" />
           </div>
           <span className="text-xs mt-1">Post</span>
@@ -55,7 +61,9 @@ export default function BottomNavigation({
           className={`flex flex-col items-center py-2 px-4 rounded-lg transition-colors ${
             activeTab === 'profile' 
               ? 'text-purple-600 bg-purple-50' 
-              : 'text-gray-500 hover:text-gray-700'
+              : user 
+                ? 'text-gray-500 hover:bg-gray-50' 
+                : 'text-gray-400'
           }`}
         >
           <User className={`h-6 w-6 ${activeTab === 'profile' ? 'text-purple-600' : ''}`} />

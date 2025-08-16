@@ -9,6 +9,8 @@ import SearchFilters from "./components/SearchFilters"
 import EasterEggsGrid from "./components/EasterEggsGrid"
 import EasterEggModal from "./components/EasterEggModal"
 import EditEggModal from "./components/EditEggModal"
+import LoginPrompt from "./components/LoginPrompt"
+import NoPostsMessage from "./components/NoPostsMessage"
 
 import { getAlbumColors } from "./utils/albumColors"
 import API_BASE_URL from "./config.js"
@@ -368,7 +370,10 @@ export default function App() {
       // Filter by active tab (home or profile)
       if (activeTab === "home") {
         return true // Show all eggs
-      } else if (activeTab === "profile" && user) {
+      } else if (activeTab === "profile") {
+        if (!user) {
+          return false // Don't show anything on profile tab if not logged in
+        }
         return egg.user_id === user.id // Show only user's eggs
       }
 
@@ -433,18 +438,42 @@ export default function App() {
           filteredAndSortedEasterEggs={filteredAndSortedEasterEggs}
         />
 
-        {/* Easter Eggs Grid */}
-        <EasterEggsGrid
-          easterEggs={filteredAndSortedEasterEggs}
-          userLikes={userLikes}
-          onEggClick={handleEggClick}
-          onVote={handleVote}
-          getAlbumColors={getAlbumColors}
-          loading={loading}
-          currentUser={user}
-          onEditEgg={handleEditEgg}
-          activeTab={activeTab}
-        />
+        {/* Content based on active tab and authentication */}
+        {activeTab === 'post' && !user ? (
+          <LoginPrompt 
+            message="Please log in or create an account to post Easter eggs!"
+            onOpenAuthModal={(mode) => {
+              setAuthMode(mode)
+              setIsAuthModalOpen(true)
+            }}
+          />
+        ) : activeTab === 'profile' && !user ? (
+          <LoginPrompt 
+            message="Please log in or create an account to view your posts!"
+            onOpenAuthModal={(mode) => {
+              setAuthMode(mode)
+              setIsAuthModalOpen(true)
+            }}
+          />
+        ) : activeTab === 'profile' && user && !loading && filteredAndSortedEasterEggs.length === 0 ? (
+          /* No Posts Message */
+          <NoPostsMessage 
+            onOpenAddEggModal={() => setIsAddEggModalOpen(true)}
+          />
+        ) : (
+          /* Easter Eggs Grid */
+          <EasterEggsGrid
+            easterEggs={filteredAndSortedEasterEggs}
+            userLikes={userLikes}
+            onEggClick={handleEggClick}
+            onVote={handleVote}
+            getAlbumColors={getAlbumColors}
+            loading={loading}
+            currentUser={user}
+            onEditEgg={handleEditEgg}
+            activeTab={activeTab}
+          />
+        )}
       </main>
 
       {/* Easter Egg Modal */}
