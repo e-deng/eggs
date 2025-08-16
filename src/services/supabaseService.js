@@ -52,10 +52,7 @@ export const easterEggsService = {
   async getAllEasterEggs() {
     const { data, error } = await supabase
       .from('easter_eggs')
-      .select(`
-        *,
-        users!inner(username)
-      `)
+      .select('*')
       .order('created_at', { ascending: false })
     return { data, error }
   },
@@ -64,10 +61,7 @@ export const easterEggsService = {
   async getUserEasterEggs(userId) {
     const { data, error } = await supabase
       .from('easter_eggs')
-      .select(`
-        *,
-        users!inner(username)
-      `)
+      .select('*')
       .eq('user_id', userId)
       .order('created_at', { ascending: false })
     return { data, error }
@@ -108,10 +102,7 @@ export const commentsService = {
   async getComments(easterEggId) {
     const { data, error } = await supabase
       .from('comments')
-      .select(`
-        *,
-        users!inner(username)
-      `)
+      .select('*')
       .eq('easter_egg_id', easterEggId)
       .order('created_at', { ascending: true })
     return { data, error }
