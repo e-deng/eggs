@@ -116,6 +116,7 @@ export const easterEggsService = {
       .from('easter_eggs')
       .select('*')
       .order('created_at', { ascending: false })
+    
     return { data, error }
   },
 
@@ -126,6 +127,7 @@ export const easterEggsService = {
       .select('*')
       .eq('user_id', userId)
       .order('created_at', { ascending: false })
+    
     return { data, error }
   },
 
@@ -175,8 +177,21 @@ export const commentsService = {
     const { data, error } = await supabase
       .from('comments')
       .insert([commentData])
-      .select()
-    return { data, error }
+    
+    if (error) {
+      return { data: null, error }
+    }
+    
+    // Return the comment data with a generated id for immediate use
+    // The actual id will be fetched when we reload comments
+    return { 
+      data: {
+        ...commentData,
+        id: `temp-${Date.now()}`,
+        created_at: new Date().toISOString()
+      }, 
+      error: null 
+    }
   }
 }
 
@@ -205,20 +220,21 @@ export const likesService = {
   // Toggle like - saves to Supabase
   async toggleLike(userId, easterEggId) {
     try {
-      // Check if already liked
-      const { data: existingLike, error: checkError } = await supabase
+      // Check if already liked using count instead of select to avoid query conflicts
+      const { count, error: checkError } = await supabase
         .from('user_likes')
-        .select('*')
+        .select('*', { count: 'exact', head: true })
         .eq('user_id', userId)
         .eq('easter_egg_id', easterEggId)
-        .single()
 
-      if (checkError && checkError.code !== 'PGRST116') {
+      if (checkError) {
         console.error('Error checking existing like:', checkError)
         return { error: 'Failed to check like status', liked: false }
       }
 
-      if (existingLike) {
+      const alreadyLiked = count > 0
+
+      if (alreadyLiked) {
         // Unlike
         const { error } = await supabase
           .from('user_likes')
@@ -230,6 +246,9 @@ export const likesService = {
           console.error('Error removing like:', error)
           return { error: 'Failed to remove like', liked: false }
         }
+        
+        // Update the likes count in easter_eggs table
+        await this.updateEasterEggLikesCount(easterEggId, -1)
         
         return { error: null, liked: false }
       } else {
@@ -246,11 +265,46 @@ export const likesService = {
           return { error: 'Failed to add like', liked: false }
         }
         
+        // Update the likes count in easter_eggs table
+        await this.updateEasterEggLikesCount(easterEggId, 1)
+        
         return { error: null, liked: true }
       }
     } catch (error) {
       console.error('Error in toggleLike:', error)
       return { error: 'Failed to toggle like', liked: false }
+    }
+  },
+
+  // Update the likes count in easter_eggs table
+  async updateEasterEggLikesCount(easterEggId, increment) {
+    try {
+      // First get the current upvotes count
+      const { data: currentEgg, error: fetchError } = await supabase
+        .from('easter_eggs')
+        .select('upvotes_count')
+        .eq('id', easterEggId)
+        .single()
+      
+      if (fetchError) {
+        console.error('Error fetching current upvotes count:', fetchError)
+        return
+      }
+      
+      const currentCount = currentEgg?.upvotes_count || 0
+      const newCount = Math.max(0, currentCount + increment) // Ensure count doesn't go below 0
+      
+      // Update the upvotes count
+      const { error: updateError } = await supabase
+        .from('easter_eggs')
+        .update({ upvotes_count: newCount })
+        .eq('id', easterEggId)
+      
+      if (updateError) {
+        console.error('Error updating upvotes count:', updateError)
+      }
+    } catch (error) {
+      console.error('Error in updateEasterEggLikesCount:', error)
     }
   }
 }

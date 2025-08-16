@@ -3,7 +3,8 @@ import React from "react"
 export default function Header({ 
   user, 
   onLogout, 
-  onOpenAuthModal
+  onOpenAuthModal,
+  onOpenUserProfile
 }) {
   return (
     <header className="bg-white border-b border-gray-200 sticky top-0 z-40">
@@ -15,7 +16,7 @@ export default function Header({
               <span className="text-white font-bold text-lg">🥚</span>
             </div>
             <h1 className="text-xl font-bold text-gray-900">
-              Taylor Swift Easter Eggs
+              TS Easter Eggs
             </h1>
           </div>
 
@@ -23,7 +24,16 @@ export default function Header({
           <div className="flex items-center space-x-3">
             {user ? (
               <div className="flex items-center space-x-3">
-                <span className="text-sm text-gray-600">
+                <button
+                  onClick={onOpenUserProfile}
+                  className="md:hidden text-sm text-gray-600 hover:text-orange-600 transition-colors"
+                >
+                  <span className="font-medium text-orange-600">
+                    {user.username}
+                  </span>
+                </button>
+                
+                <span className="hidden md:inline text-sm text-gray-600">
                   <span className="font-medium text-orange-600">
                     {user.username}
                   </span>
@@ -31,7 +41,7 @@ export default function Header({
 
                 <button
                   onClick={onLogout}
-                  className="text-gray-500 hover:text-gray-700 text-sm font-medium transition-colors"
+                  className="hidden md:inline text-gray-500 hover:text-gray-700 text-sm font-medium transition-colors"
                 >
                   Logout
                 </button>

@@ -10,6 +10,8 @@ import LoginPrompt from "./components/LoginPrompt"
 import NoPostsMessage from "./components/NoPostsMessage"
 import TopNavigation from "./components/TopNavigation"
 import BottomNavigation from "./components/BottomNavigation"
+import Footer from "./components/Footer"
+import MobileUserProfile from "./components/MobileUserProfile"
 import { easterEggsService, commentsService, likesService } from "./services/supabaseService"
 import { authService } from "./services/supabaseService"
 import { getAlbumColors } from "./utils/albumColors"
@@ -33,6 +35,7 @@ export default function App() {
   const [user, setUser] = useState(null)
   const [userLikes, setUserLikes] = useState(new Set())
   const [activeTab, setActiveTab] = useState("home")
+  const [isMobileProfileOpen, setIsMobileProfileOpen] = useState(false)
 
   // Check if user is authenticated on app load
   const checkAuthStatus = useCallback(async () => {
@@ -150,6 +153,9 @@ export default function App() {
 
       setComments(prev => [...prev, comment])
       setNewComment("")
+
+      // Refresh comments to get the real data from the database
+      await loadComments(selectedEgg.id)
 
       // Refresh the Easter eggs list to update comment count
       await loadEasterEggs()
@@ -283,9 +289,22 @@ export default function App() {
       localStorage.removeItem("user")
       setUser(null)
       setUserLikes(new Set())
+      setIsMobileProfileOpen(false)
     } catch (error) {
       console.error("Logout error:", error)
     }
+  }
+
+  // Handle opening mobile user profile
+  const handleOpenMobileProfile = () => {
+    setIsMobileProfileOpen(true)
+  }
+
+  // Handle opening user settings
+  const handleOpenUserSettings = () => {
+    // TODO: Implement user settings modal
+    setIsMobileProfileOpen(false)
+    console.log("Open user settings")
   }
 
   // Filter and sort Easter eggs
@@ -348,6 +367,7 @@ export default function App() {
           setAuthMode(mode)
           setIsAuthModalOpen(true)
         }}
+        onOpenUserProfile={handleOpenMobileProfile}
       />
 
       {/* Auth Notice */}
@@ -441,6 +461,9 @@ export default function App() {
         )}
       </main>
 
+      {/* Footer */}
+      <Footer />
+
       {/* Easter Egg Modal */}
       {selectedEgg && (
         <EasterEggModal
@@ -470,6 +493,15 @@ export default function App() {
         onClose={() => setIsAuthModalOpen(false)}
         onAuthSuccess={handleAuthSuccess}
         mode={authMode}
+      />
+
+      {/* Mobile User Profile */}
+      <MobileUserProfile
+        isOpen={isMobileProfileOpen}
+        onClose={() => setIsMobileProfileOpen(false)}
+        user={user}
+        onLogout={handleLogout}
+        onOpenUserSettings={handleOpenUserSettings}
       />
 
       {/* Bottom Navigation */}

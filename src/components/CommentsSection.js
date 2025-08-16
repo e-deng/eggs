@@ -39,8 +39,8 @@ export default function CommentsSection({
 
       {/* Comments List */}
       <div className="space-y-4">
-        {comments.map((comment) => (
-          <div key={comment.id} className="flex space-x-3">
+        {comments.map((comment, index) => (
+          <div key={comment.id || `${comment.username}-${comment.created_at}-${index}`} className="flex space-x-3">
             <UserAvatar 
               user={{ username: comment.username, profile_picture: comment.profile_picture }} 
               size="sm" 

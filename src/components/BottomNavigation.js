@@ -58,7 +58,7 @@ export default function BottomNavigation({
           }`}
         >
           <User className="h-5 w-5" />
-          <span className="text-xs font-medium">Profile</span>
+          <span className="text-xs font-medium">My Posts</span>
         </button>
 
         {/* Favorites Tab */}

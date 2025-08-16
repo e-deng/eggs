@@ -133,7 +133,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess, mode = "logi
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-purple-600 hover:bg-purple-700 text-white py-3 rounded-xl font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            className="w-full bg-orange-600 hover:bg-orange-700 text-white py-3 rounded-xl font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
             {loading ? (
               <>
@@ -156,7 +156,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess, mode = "logi
           </p>
           <button
             onClick={() => setIsLogin(!isLogin)}
-            className="text-purple-600 hover:text-purple-700 font-medium mt-1"
+            className="text-orange-600 hover:text-orange-700 font-medium mt-1"
           >
             {isLogin ? "Sign up here" : "Sign in here"}
           </button>
