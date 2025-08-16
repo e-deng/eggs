@@ -203,11 +203,22 @@ export const commentsService = {
       // First pass: create a map of all comments
       allComments.forEach(comment => {
         const isLikedByUser = userCommentLikes.some(like => like.comment_id === comment.id)
+        
+        // Check if this is a reply based on content prefix
+        let tempParentId = comment.temp_parent_id
+        if (!tempParentId && comment.content && comment.content.startsWith('[REPLY_TO:')) {
+          const match = comment.content.match(/\[REPLY_TO:([^\]]+)\]/)
+          if (match) {
+            tempParentId = match[1]
+          }
+        }
+        
         commentsMap.set(comment.id, {
           ...comment,
           replies: [],
           upvotes_count: comment.upvotes_count || 0,
           parent_comment_id: comment.parent_comment_id || null,
+          temp_parent_id: tempParentId,
           user: { username: comment.username, profile_picture: null },
           user_likes: isLikedByUser ? [{ user_id: currentUserId }] : []
         })
@@ -231,20 +242,54 @@ export const commentsService = {
       
       // Second pass: organize into tree structure
       allComments.forEach(comment => {
-        if (comment.parent_comment_id && comment.parent_comment_id !== null) {
+        // Check for both the real parent_comment_id and our temporary temp_parent_id
+        let parentId = comment.parent_comment_id || comment.temp_parent_id
+        
+        // Also check if this is a reply based on content prefix
+        if (!parentId && comment.content && comment.content.startsWith('[REPLY_TO:')) {
+          const match = comment.content.match(/\[REPLY_TO:([^\]]+)\]/)
+          if (match) {
+            parentId = match[1]
+            console.log(`Detected reply from content prefix: ${comment.id} -> ${parentId}`)
+          }
+        }
+        
+        if (parentId && parentId !== null) {
           // This is a reply
-          const parentComment = commentsMap.get(comment.parent_comment_id)
+          const parentComment = commentsMap.get(parentId)
           if (parentComment) {
             parentComment.replies.push(commentsMap.get(comment.id))
+            console.log(`Added reply ${comment.id} to parent ${parentId}`)
           } else {
             // Parent comment not found, treat as root comment
+            console.log(`Parent comment ${parentId} not found for reply ${comment.id}, treating as root`)
             rootComments.push(commentsMap.get(comment.id))
           }
         } else {
           // This is a root comment
+          console.log(`Adding root comment ${comment.id}`)
           rootComments.push(commentsMap.get(comment.id))
         }
       })
+      
+      // Debug: Log the tree structure
+      console.log('Root comments:', rootComments.map(c => ({ id: c.id, replies: c.replies?.length || 0 })))
+      rootComments.forEach(comment => {
+        if (comment.replies && comment.replies.length > 0) {
+          console.log(`Comment ${comment.id} has ${comment.replies.length} replies:`, comment.replies.map(r => r.id))
+        }
+      })
+      
+      // Calculate depth for each comment and its replies
+      const calculateDepth = (comment, depth = 0) => {
+        comment.depth = depth
+        if (comment.replies && comment.replies.length > 0) {
+          comment.replies.forEach(reply => calculateDepth(reply, depth + 1))
+        }
+      }
+      
+      // Apply depth calculation to all root comments
+      rootComments.forEach(comment => calculateDepth(comment))
       
       // Sort replies by newest first within each comment
       rootComments.forEach(comment => {
@@ -253,7 +298,7 @@ export const commentsService = {
         }
       })
       
-      console.log('Processed comments:', rootComments)
+      console.log('Processed comments with depth:', rootComments)
       return { data: rootComments, error: null }
     } catch (error) {
       return { data: null, error: error.message }
@@ -288,32 +333,53 @@ export const commentsService = {
     }
   },
 
-  // Add reply to a comment
+    // Add reply to a comment
   async addReply(parentCommentId, replyData) {
     try {
-      // For now, just create a regular comment since parent_comment_id column doesn't exist yet
-      // This will be updated once the database migration is run
-      console.log('Creating reply as regular comment (parent_comment_id not supported yet)')
+      // Since parent_comment_id column doesn't exist yet, we'll use a different approach
+      // We'll add a special prefix to the content to identify replies
+      console.log('Creating reply with content-based tracking')
+      
+      // Get the parent comment to include its username in the reply
+      const { data: parentComment, error: parentError } = await supabase
+        .from('comments')
+        .select('username')
+        .eq('id', parentCommentId)
+        .single()
+      
+      if (parentError) {
+        console.error('Error fetching parent comment:', parentError)
+        return { data: null, error: 'Parent comment not found' }
+      }
+      
+      // Create reply content with a special prefix
+      const replyContent = `[REPLY_TO:${parentCommentId}] ${replyData.content}`
+      
+      const replyDataWithPrefix = {
+        ...replyData,
+        content: replyContent
+      }
       
       const { data, error } = await supabase
         .from('comments')
-        .insert([replyData])
+        .insert([replyDataWithPrefix])
       
       if (error) {
         console.error('Error creating reply:', error)
         return { data: null, error }
       }
       
-              return { 
-          data: {
-            ...replyData,
-            id: `temp-${Date.now()}`,
-            created_at: new Date().toISOString(),
-            replies: [],
-            user: { username: replyData.username, profile_picture: null }
-          }, 
-          error: null 
-        }
+      return { 
+        data: {
+          ...replyDataWithPrefix,
+          id: `temp-${Date.now()}`,
+          created_at: new Date().toISOString(),
+          replies: [],
+          temp_parent_id: parentCommentId, // Add temp field for frontend use
+          user: { username: replyData.username, profile_picture: null }
+        }, 
+        error: null 
+      }
     } catch (error) {
       console.error('Error in addReply:', error)
       return { data: null, error: error.message }

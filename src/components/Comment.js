@@ -7,12 +7,22 @@ export default function Comment({
   currentUser, 
   onReply, 
   onUpvote,
-  depth = 0,
   maxDepth = 3
 }) {
+  // Use the calculated depth from the comment object, or default to 0
+  const depth = comment.depth || 0
   const [showReplyForm, setShowReplyForm] = useState(false)
   const [replyText, setReplyText] = useState("")
   const [isSubmitting, setIsSubmitting] = useState(false)
+  
+  // Debug logging
+  console.log('Comment render:', { 
+    id: comment.id, 
+    depth, 
+    hasReplies: comment.replies?.length > 0,
+    replies: comment.replies,
+    parentId: comment.parent_comment_id || comment.temp_parent_id
+  })
 
   const handleReply = async () => {
     if (!replyText.trim() || !currentUser) return
@@ -89,7 +99,20 @@ export default function Comment({
               </button>
             </div>
             
-            <p className="text-gray-700 text-sm leading-relaxed mb-3">{comment.content}</p>
+            <p className="text-gray-700 text-sm leading-relaxed mb-3">
+              {comment.content && comment.content.startsWith('[REPLY_TO:') 
+                ? comment.content.replace(/^\[REPLY_TO:[^\]]+\]\s*/, '') 
+                : comment.content
+              }
+            </p>
+            
+            {/* Show reply indicator if this is a reply */}
+            {(comment.parent_comment_id || comment.temp_parent_id || 
+              (comment.content && comment.content.startsWith('[REPLY_TO:'))) && (
+              <div className="text-xs text-orange-500 mb-2">
+                ↳ Reply to comment
+              </div>
+            )}
             
             {/* Action Buttons */}
             <div className="flex items-center space-x-4">
@@ -150,7 +173,6 @@ export default function Comment({
               currentUser={currentUser}
               onReply={onReply}
               onUpvote={onUpvote}
-              depth={depth + 1}
               maxDepth={maxDepth}
             />
           ))}
