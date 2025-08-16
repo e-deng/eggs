@@ -13,14 +13,14 @@ const PORT = process.env.PORT || 5000;
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: {
-    fileSize: 5 * 1024 * 1024, // 5MB limit
+    fileSize: 100 * 1024 * 1024, // 100MB limit for videos
   },
   fileFilter: (req, file, cb) => {
-    // Only allow images
-    if (file.mimetype.startsWith('image/')) {
+    // Allow images and videos
+    if (file.mimetype.startsWith('image/') || file.mimetype.startsWith('video/')) {
       cb(null, true);
     } else {
-      cb(new Error('Only image files are allowed!'), false);
+      cb(new Error('Only image and video files are allowed!'), false);
     }
   },
 });
@@ -72,6 +72,34 @@ async function uploadImageToStorage(file, easterEggId) {
     return publicUrl;
   } catch (error) {
     console.error('Error uploading image to Supabase Storage:', error);
+    throw error;
+  }
+}
+
+// Helper function to upload video to Supabase Storage
+async function uploadVideoToStorage(file, easterEggId) {
+  try {
+    const fileName = `${easterEggId}-${Date.now()}-${file.originalname}`;
+    const { data, error } = await supabase.storage
+      .from('easter-egg-videos')
+      .upload(fileName, file.buffer, {
+        contentType: file.mimetype,
+        cacheControl: '3600',
+        upsert: false
+      });
+
+    if (error) {
+      throw error;
+    }
+
+    // Get public URL
+    const { data: { publicUrl } } = supabase.storage
+      .from('easter-egg-videos')
+      .getPublicUrl(fileName);
+
+    return publicUrl;
+  } catch (error) {
+    console.error('Error uploading video to Supabase Storage:', error);
     throw error;
   }
 }
@@ -140,11 +168,20 @@ app.get('/api/easter-eggs', async (req, res) => {
 });
 
 // Update the POST /api/easter-eggs endpoint to require authentication
-app.post('/api/easter-eggs', authenticateUser, upload.single('image'), async (req, res) => {
+app.post('/api/easter-eggs', authenticateUser, upload.fields([
+  { name: 'image', maxCount: 1 },
+  { name: 'video', maxCount: 1 }
+]), async (req, res) => {
   try {
     let imageUrl = null;
-    if (req.file) {
-      imageUrl = await uploadImageToStorage(req.file, 'temp'); // Upload with temp ID
+    let videoUrl = null;
+    
+    if (req.files && req.files.image) {
+      imageUrl = await uploadImageToStorage(req.files.image[0], 'temp'); // Upload with temp ID
+    }
+    
+    if (req.files && req.files.video) {
+      videoUrl = await uploadVideoToStorage(req.files.video[0], 'temp'); // Upload with temp ID
     }
 
     const easterEggData = {
@@ -152,6 +189,7 @@ app.post('/api/easter-eggs', authenticateUser, upload.single('image'), async (re
       user_id: req.user.id,
       username: req.user.username,
       image_url: imageUrl || req.body.image_url,
+      video_url: videoUrl || req.body.video_url,
       upvotes_count: 0,
       comments_count: 0,
       created_at: new Date().toISOString(),
@@ -165,10 +203,10 @@ app.post('/api/easter-eggs', authenticateUser, upload.single('image'), async (re
     }
 
     // If image was uploaded, rename it with the actual Easter egg ID
-    if (req.file && imageUrl) {
+    if (req.files && req.files.image && imageUrl) {
       try {
-        const oldFileName = `temp-${Date.now()}-${req.file.originalname}`;
-        const newFileName = `${data.id}-${Date.now()}-${req.file.originalname}`;
+        const oldFileName = `temp-${Date.now()}-${req.files.image[0].originalname}`;
+        const newFileName = `${data.id}-${Date.now()}-${req.files.image[0].originalname}`;
         const { error: renameError } = await supabase.storage
           .from('easter-egg-images')
           .move(oldFileName, newFileName);
@@ -180,10 +218,103 @@ app.post('/api/easter-eggs', authenticateUser, upload.single('image'), async (re
         console.error('Error renaming uploaded image:', renameError);
       }
     }
+    
+    // If video was uploaded, rename it with the actual Easter egg ID
+    if (req.files && req.files.video && videoUrl) {
+      try {
+        const oldFileName = `temp-${Date.now()}-${req.files.video[0].originalname}`;
+        const newFileName = `${data.id}-${Date.now()}-${req.files.video[0].originalname}`;
+        const { error: renameError } = await supabase.storage
+          .from('easter-egg-videos')
+          .move(oldFileName, newFileName);
+        if (!renameError) {
+          const { data: { publicUrl } } = supabase.storage.from('easter-egg-videos').getPublicUrl(newFileName);
+          await supabase.from('easter_eggs').update({ video_url: publicUrl }).eq('id', data.id);
+        }
+      } catch (renameError) {
+        console.error('Error renaming uploaded video:', renameError);
+      }
+    }
 
     res.status(201).json(data);
   } catch (error) {
     console.error('Error in /api/easter-eggs:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// PUT endpoint to update an existing Easter egg
+app.put('/api/easter-eggs/:id', authenticateUser, upload.fields([
+  { name: 'image', maxCount: 1 },
+  { name: 'video', maxCount: 1 }
+]), async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // Check if the Easter egg exists and belongs to the user
+    const { data: existingEgg, error: fetchError } = await supabase
+      .from('easter_eggs')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (fetchError || !existingEgg) {
+      return res.status(404).json({ error: 'Easter egg not found' });
+    }
+
+    if (existingEgg.user_id !== req.user.id) {
+      return res.status(403).json({ error: 'You can only edit your own posts' });
+    }
+
+    let imageUrl = existingEgg.image_url;
+    let videoUrl = existingEgg.video_url;
+
+    // Handle image updates
+    if (req.files && req.files.image) {
+      // Upload new image
+      imageUrl = await uploadImageToStorage(req.files.image[0], id);
+    } else if (req.body.remove_image === 'true') {
+      // Remove existing image
+      imageUrl = null;
+    }
+
+    // Handle video updates
+    if (req.files && req.files.video) {
+      // Upload new video
+      videoUrl = await uploadVideoToStorage(req.files.video[0], id);
+    } else if (req.body.remove_video === 'true') {
+      // Remove existing video
+      videoUrl = null;
+    }
+
+    // Prepare update data
+    const updateData = {
+      title: req.body.title,
+      description: req.body.description,
+      album: req.body.album || null,
+      media_type: req.body.media_type || null,
+      clue_type: req.body.clue_type || null,
+      image_url: imageUrl,
+      video_url: videoUrl,
+      updated_at: new Date().toISOString()
+    };
+
+    // Update the Easter egg
+    const { data: updatedEgg, error: updateError } = await supabase
+      .from('easter_eggs')
+      .update(updateData)
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (updateError) {
+      console.error('Error updating Easter egg:', updateError);
+      return res.status(500).json({ error: 'Failed to update Easter egg' });
+    }
+
+    res.json(updatedEgg);
+  } catch (error) {
+    console.error('Error in PUT /api/easter-eggs/:id:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -635,7 +766,10 @@ app.get('/api/auth/me', async (req, res) => {
 
       res.json({ 
         success: true, 
-        user: { id: userProfile.id, username: userProfile.username }
+        user: { 
+          id: userProfile.id, 
+          username: userProfile.username
+        }
       })
     } catch (decodeError) {
       return res.status(401).json({ error: 'Invalid token format' })
@@ -645,6 +779,11 @@ app.get('/api/auth/me', async (req, res) => {
     res.status(500).json({ error: 'Internal server error' })
   }
 })
+
+// Profile updates disabled - users cannot change their profile
+app.put('/api/users/profile', authenticateUser, (req, res) => {
+  res.status(403).json({ error: 'Profile updates are not allowed' });
+});
 
 // Serve React app in production
 if (process.env.NODE_ENV === 'production') {
