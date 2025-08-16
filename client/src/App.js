@@ -13,7 +13,8 @@ import LoginPrompt from "./components/LoginPrompt"
 import NoPostsMessage from "./components/NoPostsMessage"
 
 import { getAlbumColors } from "./utils/albumColors"
-import API_BASE_URL from "./config.js"
+import { easterEggsService, commentsService, likesService } from "./services/supabaseService"
+import { supabase } from "./supabaseClient"
 
 export default function App() {
   const [easterEggs, setEasterEggs] = useState([])
@@ -36,33 +37,23 @@ export default function App() {
 
   // Check if user is authenticated on app load
   const checkAuthStatus = useCallback(async () => {
-    const sessionToken = localStorage.getItem("sessionToken")
-    const savedUser = localStorage.getItem("user")
-    
-    if (sessionToken && savedUser) {
-      try {
-        const response = await fetch(`${API_BASE_URL}/api/auth/me`, {
-          headers: {
-            "Authorization": `Bearer ${sessionToken}`
-          }
-        })
-        
-        if (response.ok) {
-          const data = await response.json()
-          setUser(data.user)
-          // We'll call loadUserLikes after it's defined
-        } else {
-          // Token is invalid, clear storage
-          localStorage.removeItem("sessionToken")
-          localStorage.removeItem("user")
-          setUser(null)
-        }
-      } catch (error) {
-        console.error("Auth check failed:", error)
+    try {
+      const { data: { user }, error } = await supabase.auth.getUser()
+      
+      if (user && !error) {
+        setUser(user)
+        // We'll call loadUserLikes after it's defined
+      } else {
+        // No valid session, clear storage
         localStorage.removeItem("sessionToken")
         localStorage.removeItem("user")
         setUser(null)
       }
+    } catch (error) {
+      console.error("Auth check failed:", error)
+      localStorage.removeItem("sessionToken")
+      localStorage.removeItem("user")
+      setUser(null)
     }
   }, [])
 
@@ -71,24 +62,16 @@ export default function App() {
     if (!user) return
     
     try {
-      const promises = easterEggs.map(egg => 
-        fetch(`${API_BASE_URL}/api/easter-eggs/${egg.id}/like-status`, {
-          headers: {
-            "Authorization": `Bearer ${localStorage.getItem("sessionToken")}`
-          }
-        }).then(res => res.json())
-      )
+      const { data, error } = await likesService.getUserLikes(user.id)
       
-      const results = await Promise.all(promises)
-      const likedEggIds = results
-        .map((result, index) => result.liked ? easterEggs[index].id : null)
-        .filter(id => id !== null)
-      
-      setUserLikes(new Set(likedEggIds))
+      if (!error && data) {
+        const likedEggIds = data.map(like => like.easter_egg_id)
+        setUserLikes(new Set(likedEggIds))
+      }
     } catch (error) {
       console.error("Failed to load user likes:", error)
     }
-  }, [user, easterEggs])
+  }, [user])
 
   // Fetch Easter eggs on component mount - only once
   useEffect(() => {
@@ -112,16 +95,7 @@ export default function App() {
   // Handle logout
   const handleLogout = async () => {
     try {
-      const sessionToken = localStorage.getItem("sessionToken")
-      if (sessionToken) {
-        await fetch(`${API_BASE_URL}/api/auth/logout`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ sessionToken })
-        })
-      }
+      await supabase.auth.signOut()
     } catch (error) {
       console.error("Logout error:", error)
     } finally {
@@ -132,16 +106,16 @@ export default function App() {
     }
   }
 
-  // Load Easter eggs from API
+  // Load Easter eggs from Supabase
   const loadEasterEggs = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/easter-eggs`)
-      if (!response.ok) {
+      const { data: eggs, error } = await easterEggsService.getAllEasterEggs()
+      
+      if (error) {
         throw new Error('Failed to fetch Easter eggs')
       }
       
-      const eggs = await response.json()
-      setEasterEggs(eggs)
+      setEasterEggs(eggs || [])
     } catch (error) {
       console.error("❌ Error loading Easter eggs:", error)
       setEasterEggs([])
@@ -154,13 +128,14 @@ export default function App() {
   const loadComments = async (easterEggId) => {
     try {
       console.log("🔍 Loading comments for egg:", easterEggId)
-      const response = await fetch(`${API_BASE_URL}/api/easter-eggs/${easterEggId}/comments`)
-      if (!response.ok) {
+      const { data: comments, error } = await commentsService.getComments(easterEggId)
+      
+      if (error) {
         throw new Error('Failed to fetch comments')
       }
-      const comments = await response.json()
+      
       console.log("✅ Loaded comments:", comments)
-      setComments(comments)
+      setComments(comments || [])
     } catch (error) {
       console.error("❌ Error loading comments:", error)
     }
@@ -184,23 +159,16 @@ export default function App() {
     if (!newComment.trim() || !selectedEgg) return
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/comments`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${localStorage.getItem("sessionToken")}`
-        },
-        body: JSON.stringify({
-          easter_egg_id: selectedEgg.id,
-          content: newComment.trim()
-        })
+      const { data: comment, error } = await commentsService.addComment({
+        easter_egg_id: selectedEgg.id,
+        user_id: user.id,
+        content: newComment.trim()
       })
 
-      if (!response.ok) {
+      if (error) {
         throw new Error("Failed to add comment")
       }
 
-      const comment = await response.json()
       setComments(prev => [...prev, comment])
       setNewComment("")
 
@@ -226,48 +194,27 @@ export default function App() {
     }
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/easter-eggs/${eggId}/upvote`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem("sessionToken")}`
-        }
-      })
-
-      if (!response.ok) {
-        throw new Error('Failed to update upvote')
-      }
-
-      const result = await response.json()
+      const { error, liked } = await likesService.toggleLike(user.id, eggId)
       
-      if (result.success) {
-        // Update the local state with new upvote count
-        setEasterEggs((prev) => prev.map(egg => 
-          egg.id === eggId 
-            ? { ...egg, upvotes_count: result.upvotes_count }
-            : egg
-        ))
-
-        // Also update the selected egg if it's the same one
-        setSelectedEgg((prev) => 
-          prev && prev.id === eggId 
-            ? { ...prev, upvotes_count: result.upvotes_count }
-            : prev
-        )
-
-        // Update user likes
-        if (result.liked) {
-          setUserLikes(prev => new Set([...prev, eggId]))
-        } else {
-          setUserLikes(prev => {
-            const newSet = new Set(prev)
-            newSet.delete(eggId)
-            return newSet
-          })
-        }
+      if (error) {
+        throw new Error('Failed to update like')
       }
+
+      // Update user likes
+      if (liked) {
+        setUserLikes(prev => new Set([...prev, eggId]))
+      } else {
+        setUserLikes(prev => {
+          const newSet = new Set(prev)
+          newSet.delete(eggId)
+          return newSet
+        })
+      }
+
+      // Refresh the Easter eggs list to get updated counts
+      await loadEasterEggs()
     } catch (error) {
-      console.error("Error updating upvote:", error)
+      console.error("Error updating like:", error)
     }
   }
 
@@ -295,16 +242,9 @@ export default function App() {
   // Handle updating an Easter egg
   const handleUpdateEgg = async (eggId, updatedData) => {
     try {
-      const sessionToken = localStorage.getItem("sessionToken")
-      const response = await fetch(`${API_BASE_URL}/api/easter-eggs/${eggId}`, {
-        method: 'PUT',
-        headers: {
-          "Authorization": `Bearer ${sessionToken}`
-        },
-        body: updatedData
-      })
-
-      if (!response.ok) {
+      const { error } = await easterEggsService.updateEasterEgg(eggId, updatedData)
+      
+      if (error) {
         throw new Error('Failed to update Easter egg')
       }
 
@@ -327,26 +267,27 @@ export default function App() {
     }
 
     try {
-      console.log("🆕 Adding new egg to API:", newEgg.title || "New Egg")
+      console.log("🆕 Adding new egg to Supabase:", newEgg.title || "New Egg")
       
-      const sessionToken = localStorage.getItem("sessionToken")
-      const response = await fetch(`${API_BASE_URL}/api/easter-eggs`, {
-        method: 'POST',
-        headers: {
-          "Authorization": `Bearer ${sessionToken}`
-        },
-        body: newEgg // newEgg is now FormData
-      })
-
-      if (!response.ok) {
-        throw new Error('Failed to add Easter egg')
+      // Convert FormData to regular object for Supabase
+      const eggData = {
+        title: newEgg.get('title'),
+        description: newEgg.get('description'),
+        album: newEgg.get('album'),
+        media_type: newEgg.get('media_type'),
+        clue_type: newEgg.get('clue_type'),
+        user_id: user.id
       }
 
-      const addedEgg = await response.json()
+      const { data: addedEgg, error } = await easterEggsService.createEasterEgg(eggData)
+      
+      if (error) {
+        throw new Error('Failed to add Easter egg')
+      }
       
       if (addedEgg) {
-        console.log("✅ Egg added to API:", addedEgg)
-        // Refresh the eggs list from API to get the latest data
+        console.log("✅ Egg added to Supabase:", addedEgg)
+        // Refresh the eggs list from Supabase to get the latest data
         await loadEasterEggs()
       }
     } catch (error) {

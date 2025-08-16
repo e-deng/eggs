@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from "react"
 import { X, User, Lock, LogIn, UserPlus } from "lucide-react"
-import API_BASE_URL from "../config.js"
+import { supabase } from "../supabaseClient"
 
 export default function AuthModal({ isOpen, onClose, onAuthSuccess, mode = "login" }) {
   const [isLogin, setIsLogin] = useState(mode === "login")
   const [formData, setFormData] = useState({
-    username: "",
-    password: ""
+    email: "",
+    password: "",
+    username: ""
   })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
@@ -18,9 +19,9 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess, mode = "logi
   useEffect(() => {
     console.log("AuthModal useEffect - mode changed to:", mode)
     setIsLogin(mode === "login")
-    setFormData({ username: "", password: "" })
-    setError("")
-  }, [mode])
+            setFormData({ email: "", password: "", username: "" })
+        setError("")
+      }, [mode])
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -28,29 +29,67 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess, mode = "logi
     setError("")
 
     try {
-      const endpoint = isLogin ? `${API_BASE_URL}/api/auth/login` : `${API_BASE_URL}/api/auth/register`
-      const response = await fetch(endpoint, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(formData)
-      })
+      if (isLogin) {
+        // Sign in
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email: formData.email,
+          password: formData.password
+        })
 
-      const data = await response.json()
+        if (error) throw error
 
-      if (!response.ok) {
-        throw new Error(data.error || "Authentication failed")
-      }
+        if (data.user) {
+          // Get user profile with username
+          const { data: profile } = await supabase
+            .from('users')
+            .select('username')
+            .eq('id', data.user.id)
+            .single()
 
-      if (data.success) {
-        // Store the session token
-        localStorage.setItem("sessionToken", data.sessionToken)
-        localStorage.setItem("user", JSON.stringify(data.user))
-        
-        onAuthSuccess(data.user)
-        onClose()
-        setFormData({ username: "", password: "" })
+          const userWithUsername = {
+            ...data.user,
+            username: profile?.username || 'User'
+          }
+
+          localStorage.setItem("user", JSON.stringify(userWithUsername))
+          onAuthSuccess(userWithUsername)
+          onClose()
+          setFormData({ email: "", password: "", username: "" })
+        }
+      } else {
+        // Sign up
+        const { data, error } = await supabase.auth.signUp({
+          email: formData.email,
+          password: formData.password,
+          options: {
+            data: { username: formData.username }
+          }
+        })
+
+        if (error) throw error
+
+        if (data.user) {
+          // Create user profile
+          const { error: profileError } = await supabase
+            .from('users')
+            .insert([{
+              id: data.user.id,
+              username: formData.username,
+              email: formData.email
+            }])
+
+          if (profileError) throw profileError
+
+          const userWithUsername = {
+            ...data.user,
+            username: formData.username
+          }
+
+          localStorage.setItem("user", JSON.stringify(userWithUsername))
+          onAuthSuccess(userWithUsername)
+          onClose()
+          setFormData({ email: "", password: "", username: "" })
+        }
       }
     } catch (error) {
       setError(error.message)
@@ -69,7 +108,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess, mode = "logi
   const toggleMode = () => {
     setIsLogin(!isLogin)
     setError("")
-    setFormData({ username: "", password: "" })
+    setFormData({ email: "", password: "", username: "" })
   }
 
   if (!isOpen) return null
@@ -98,21 +137,41 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess, mode = "logi
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Username
+              Email
             </label>
             <div className="relative">
               <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
               <input
-                type="text"
-                name="username"
-                value={formData.username}
+                type="email"
+                name="email"
+                value={formData.email}
                 onChange={handleChange}
                 required
                 className="pl-10 w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
-                placeholder="Enter your username"
+                placeholder="Enter your email"
               />
             </div>
           </div>
+
+          {!isLogin && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Username
+              </label>
+              <div className="relative">
+                <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
+                <input
+                  type="text"
+                  name="username"
+                  value={formData.username}
+                  onChange={handleChange}
+                  required
+                  className="pl-10 w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                  placeholder="Enter your username"
+                />
+              </div>
+            </div>
+          )}
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
