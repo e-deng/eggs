@@ -1,11 +1,15 @@
-import React, { useState, useMemo, useEffect } from "react"
-import { TrendingUp, MessageCircle, Plus, Search, Filter } from "lucide-react"
+import React, { useState, useEffect, useMemo } from "react"
+import { Search, Plus, TrendingUp, MessageCircle, X } from "lucide-react"
 import AddEggModal from "./components/AddEggModal"
+import AuthModal from "./components/AuthModal"
+import API_BASE_URL from "./config.js"
 
 export default function App() {
   const [easterEggs, setEasterEggs] = useState([])
   const [selectedEgg, setSelectedEgg] = useState(null)
   const [isAddEggModalOpen, setIsAddEggModalOpen] = useState(false)
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false)
+  const [authMode, setAuthMode] = useState("login")
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedAlbum, setSelectedAlbum] = useState("All Albums")
   const [loading, setLoading] = useState(true)
@@ -13,19 +17,106 @@ export default function App() {
   const [newComment, setNewComment] = useState("")
   const [upvotedEggs, setUpvotedEggs] = useState(new Set())
   const [sortBy, setSortBy] = useState("date")
+  const [user, setUser] = useState(null)
+  const [userLikes, setUserLikes] = useState(new Set())
 
   // Fetch Easter eggs on component mount - only once
   useEffect(() => {
-    console.log("🚀 Initial load - calling loadEasterEggs")
     loadEasterEggs()
-  }, []) // Empty dependency array - only run once on mount
+    checkAuthStatus()
+  }, [])
+
+  // Check if user is authenticated on app load
+  const checkAuthStatus = async () => {
+    const sessionToken = localStorage.getItem("sessionToken")
+    const savedUser = localStorage.getItem("user")
+    
+    if (sessionToken && savedUser) {
+      try {
+        const response = await fetch(`${API_BASE_URL}/api/auth/me`, {
+          headers: {
+            "Authorization": `Bearer ${sessionToken}`
+          }
+        })
+        
+        if (response.ok) {
+          const data = await response.json()
+          setUser(data.user)
+          loadUserLikes()
+        } else {
+          // Token is invalid, clear storage
+          localStorage.removeItem("sessionToken")
+          localStorage.removeItem("user")
+          setUser(null)
+        }
+      } catch (error) {
+        console.error("Auth check failed:", error)
+        localStorage.removeItem("sessionToken")
+        localStorage.removeItem("user")
+        setUser(null)
+      }
+    }
+  }
+
+  // Load user's likes
+  const loadUserLikes = async () => {
+    if (!user) return
+    
+    try {
+      const promises = easterEggs.map(egg => 
+        fetch(`${API_BASE_URL}/api/easter-eggs/${egg.id}/like-status`, {
+          headers: {
+            "Authorization": `Bearer ${localStorage.getItem("sessionToken")}`
+          }
+        }).then(res => res.json())
+      )
+      
+      const results = await Promise.all(promises)
+      const likedEggIds = results
+        .map((result, index) => result.liked ? easterEggs[index].id : null)
+        .filter(id => id !== null)
+      
+      setUserLikes(new Set(likedEggIds))
+    } catch (error) {
+      console.error("Failed to load user likes:", error)
+    }
+  }
+
+  // Handle authentication success
+  const handleAuthSuccess = (userData) => {
+    setUser(userData)
+    loadUserLikes()
+  }
+
+  // Handle logout
+  const handleLogout = async () => {
+    try {
+      const sessionToken = localStorage.getItem("sessionToken")
+      if (sessionToken) {
+        await fetch(`${API_BASE_URL}/api/auth/logout`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ sessionToken })
+        })
+      }
+    } catch (error) {
+      console.error("Logout error:", error)
+    } finally {
+      localStorage.removeItem("sessionToken")
+      localStorage.removeItem("user")
+      setUser(null)
+      setUserLikes(new Set())
+    }
+  }
 
   const loadEasterEggs = async () => {
     try {
       setLoading(true)
       console.log("🔍 Loading Easter eggs from API...")
       
-      const response = await fetch('/api/easter-eggs')
+              const response = await fetch(`${API_BASE_URL}/api/easter-eggs`)
       if (!response.ok) {
         throw new Error('Failed to fetch Easter eggs')
       }
@@ -52,7 +143,7 @@ export default function App() {
   const loadComments = async (easterEggId) => {
     try {
       console.log("🔍 Loading comments for egg:", easterEggId)
-      const response = await fetch(`/api/easter-eggs/${easterEggId}/comments`)
+              const response = await fetch(`${API_BASE_URL}/api/easter-eggs/${easterEggId}/comments`)
       if (!response.ok) {
         throw new Error('Failed to fetch comments')
       }
@@ -71,41 +162,42 @@ export default function App() {
   }
 
   const handleAddComment = async () => {
+    if (!user) {
+      setIsAuthModalOpen(true)
+      setAuthMode("login")
+      return
+    }
+
     if (!newComment.trim() || !selectedEgg) return
 
     try {
-      const response = await fetch('/api/comments', {
-        method: 'POST',
+      const response = await fetch(`${API_BASE_URL}/api/comments`, {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${localStorage.getItem("sessionToken")}`
         },
         body: JSON.stringify({
           easter_egg_id: selectedEgg.id,
-          content: newComment.trim(),
-          author: "You"
+          content: newComment.trim()
         })
       })
 
       if (!response.ok) {
-        throw new Error('Failed to add comment')
+        throw new Error("Failed to add comment")
       }
 
       const comment = await response.json()
+      setComments(prev => [...prev, comment])
+      setNewComment("")
 
-      if (comment) {
-        // Add the new comment to the local state
-        setComments(prev => [comment, ...prev])
-        setNewComment("")
-
-        // Refresh the Easter eggs list to get updated comment counts
-        await loadEasterEggs()
-        
-        // Also refresh the selected egg data
-        const updatedEggs = await fetch('/api/easter-eggs').then(res => res.json())
-        const updatedEgg = updatedEggs.find(egg => egg.id === selectedEgg.id)
-        if (updatedEgg) {
-          setSelectedEgg(updatedEgg)
-        }
+      // Refresh the Easter eggs list to update comment count
+      await loadEasterEggs()
+      
+      // Also refresh the selected egg
+      const updatedEgg = easterEggs.find(egg => egg.id === selectedEgg.id)
+      if (updatedEgg) {
+        setSelectedEgg(updatedEgg)
       }
     } catch (error) {
       console.error("Error adding comment:", error)
@@ -113,13 +205,19 @@ export default function App() {
   }
 
   const handleVote = async (eggId, action) => {
+    if (!user) {
+      setIsAuthModalOpen(true)
+      setAuthMode("login")
+      return
+    }
+
     try {
-      const response = await fetch(`/api/easter-eggs/${eggId}/upvote`, {
+              const response = await fetch(`${API_BASE_URL}/api/easter-eggs/${eggId}/upvote`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ action })
+          'Authorization': `Bearer ${localStorage.getItem("sessionToken")}`
+        }
       })
 
       if (!response.ok) {
@@ -143,9 +241,15 @@ export default function App() {
             : prev
         )
 
-        // Track upvoted eggs for visual feedback
-        if (action === 'upvote') {
-          setUpvotedEggs(prev => new Set([...prev, eggId]))
+        // Update user likes
+        if (result.liked) {
+          setUserLikes(prev => new Set([...prev, eggId]))
+        } else {
+          setUserLikes(prev => {
+            const newSet = new Set(prev)
+            newSet.delete(eggId)
+            return newSet
+          })
         }
       }
     } catch (error) {
@@ -154,11 +258,21 @@ export default function App() {
   }
 
   const handleAddEgg = async (newEgg) => {
+    if (!user) {
+      setIsAuthModalOpen(true)
+      setAuthMode("login")
+      return
+    }
+
     try {
       console.log("🆕 Adding new egg to API:", newEgg.title || "New Egg")
       
-      const response = await fetch('/api/easter-eggs', {
+      const sessionToken = localStorage.getItem("sessionToken")
+      const response = await fetch(`${API_BASE_URL}/api/easter-eggs`, {
         method: 'POST',
+        headers: {
+          "Authorization": `Bearer ${sessionToken}`
+        },
         body: newEgg // newEgg is now FormData
       })
 
@@ -265,23 +379,80 @@ export default function App() {
                   Taylor Swift Easter Eggs
                 </h1>
                 <p className="text-sm text-gray-600">
-                  Discover hidden clues and connections
+                  Share any  Easter Eggs you find!
                 </p>
               </div>
             </div>
             
             <div className="flex gap-2">
-              <button
-                onClick={() => setIsAddEggModalOpen(true)}
-                className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white px-6 py-2 rounded-lg font-medium shadow-lg hover:shadow-xl transition-all duration-200"
-              >
-                <Plus className="h-5 w-5 mr-2 inline" />
-                Add Easter Egg
-              </button>
+              {user ? (
+                <>
+                  <button
+                    onClick={() => setIsAddEggModalOpen(true)}
+                    className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white px-6 py-2 rounded-lg font-medium shadow-lg hover:shadow-xl transition-all duration-200"
+                  >
+                    <Plus className="h-5 w-5 mr-2 inline" />
+                    Add Easter Egg
+                  </button>
+                  <div className="flex items-center gap-3">
+                    <span className="text-sm text-gray-600">
+                      Welcome, <span className="font-medium text-orange-600">{user.username}</span>!
+                    </span>
+                    <button
+                      onClick={handleLogout}
+                      className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg font-medium transition-colors"
+                    >
+                      Logout
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <button
+                    onClick={() => { 
+                      console.log("Setting mode to login"); 
+                      setIsAuthModalOpen(true); 
+                      setAuthMode("login"); 
+                    }}
+                    className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white px-6 py-2 rounded-lg font-medium shadow-lg hover:shadow-xl transition-all duration-200"
+                  >
+                    Sign In
+                  </button>
+                  <button
+                    onClick={() => { 
+                      console.log("Setting mode to register"); 
+                      setIsAuthModalOpen(true); 
+                      setAuthMode("register"); 
+                    }}
+                    className="bg-white border border-orange-200 text-orange-600 hover:bg-orange-50 px-6 py-2 rounded-lg font-medium transition-colors"
+                  >
+                    Sign Up
+                  </button>
+                </>
+              )}
             </div>
           </div>
         </div>
       </header>
+
+      {/* Authentication Notice */}
+      {!user && (
+        <div className="bg-orange-50 border-b border-orange-200">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-orange-800">
+                <strong>👋 Welcome!</strong> You can browse all Easter eggs, but sign in to post, comment, and like!
+              </p>
+              <button
+                onClick={() => { setIsAuthModalOpen(true); setAuthMode("login"); }}
+                className="text-orange-600 hover:text-orange-700 font-medium text-sm underline"
+              >
+                Sign In / Sign Up
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -349,7 +520,7 @@ export default function App() {
                 <div className="absolute top-3 right-3 flex gap-2">
                   <button
                     className={`${
-                      upvotedEggs.has(egg.id) 
+                      userLikes.has(egg.id) 
                         ? egg.album 
                           ? `${getAlbumColors(egg.album).bg} ${getAlbumColors(egg.album).text} border-2 ${getAlbumColors(egg.album).border}` 
                           : 'bg-orange-100 text-orange-700 border-orange-200'
@@ -360,7 +531,7 @@ export default function App() {
                       handleVote(egg.id, 'upvote')
                     }}
                   >
-                    <TrendingUp className={`h-4 w-4 ${upvotedEggs.has(egg.id) ? (egg.album ? getAlbumColors(egg.album).text : 'text-orange-600') : ''}`} />
+                    <TrendingUp className={`h-4 w-4 ${userLikes.has(egg.id) ? (egg.album ? getAlbumColors(egg.album).text : 'text-orange-600') : ''}`} />
                     <span>{egg.upvotes_count || 0}</span>
                   </button>
                   <button
@@ -480,14 +651,14 @@ export default function App() {
                         <button
                           onClick={() => handleVote(selectedEgg.id, 'upvote')}
                           className={`flex items-center gap-2 transition-colors p-2 rounded-lg ${
-                            upvotedEggs.has(selectedEgg.id)
+                            userLikes.has(selectedEgg.id)
                               ? selectedEgg.album
                                 ? `${getAlbumColors(selectedEgg.album).bg} ${getAlbumColors(selectedEgg.album).text}`
                                 : 'text-orange-700 bg-orange-50'
                               : 'text-gray-600 hover:text-orange-700 hover:bg-orange-50'
                           }`}
                         >
-                          <TrendingUp className={`h-4 w-4 ${upvotedEggs.has(selectedEgg.id) ? (selectedEgg.album ? getAlbumColors(selectedEgg.album).text : 'text-orange-600') : ''}`} />
+                          <TrendingUp className={`h-4 w-4 ${userLikes.has(selectedEgg.id) ? (selectedEgg.album ? getAlbumColors(selectedEgg.album).text : 'text-orange-600') : ''}`} />
                           <span className="text-sm sm:text-base">{selectedEgg.upvotes_count || 0} likes</span>
                         </button>
                       </div>
@@ -534,11 +705,11 @@ export default function App() {
                         <div className="flex items-start justify-between mb-2">
                           <div className="flex items-center gap-2">
                             <div className="w-8 h-8 rounded-full bg-gradient-to-r from-purple-400 to-pink-400 flex items-center justify-center text-white text-sm font-medium">
-                              {comment.author[0]?.toUpperCase() || "U"}
+                              {comment.username[0]?.toUpperCase() || "U"}
                             </div>
                             <div>
                               <div className="font-medium text-sm">
-                                {comment.author}
+                                {comment.username}
                               </div>
                               <div className="text-xs text-gray-500">
                                 {new Date(comment.created_at).toLocaleDateString()}
@@ -564,11 +735,20 @@ export default function App() {
         </div>
       )}
 
-      {/* Add New Egg Modal */}
+      {/* Add Easter Egg Modal */}
       <AddEggModal
         isOpen={isAddEggModalOpen}
         onClose={() => setIsAddEggModalOpen(false)}
         onAdd={handleAddEgg}
+        user={user}
+      />
+
+      {/* Auth Modal */}
+      <AuthModal
+        isOpen={isAuthModalOpen}
+        onClose={() => setIsAuthModalOpen(false)}
+        onAuthSuccess={handleAuthSuccess}
+        mode={authMode}
       />
     </div>
   )

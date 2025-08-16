@@ -1,7 +1,7 @@
 import React, { useState } from "react"
-import { X, Upload, Image as ImageIcon } from "lucide-react"
+import { X, Upload, Image as ImageIcon, Plus } from "lucide-react"
 
-export default function AddEggModal({ isOpen, onClose, onAdd }) {
+export default function AddEggModal({ isOpen, onClose, onAdd, user }) {
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -179,13 +179,26 @@ export default function AddEggModal({ isOpen, onClose, onAdd }) {
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-lg w-full max-w-2xl max-h-[90vh] overflow-hidden">
-        <div className="flex items-center justify-between p-6 border-b">
-          <h2 className="text-2xl font-bold text-gray-900">Add New Easter Egg</h2>
-          <button
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900">
+              Add New Easter Egg
+            </h2>
+            {user ? (
+              <p className="text-sm text-gray-600 mt-1">
+                Adding as <span className="font-medium text-orange-600">{user.username}</span>
+              </p>
+            ) : (
+              <p className="text-sm text-orange-600 mt-1">
+                Please sign in to add Easter eggs
+              </p>
+            )}
+          </div>
+          <button 
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
+            className="hover:bg-gray-100 p-2 rounded-lg transition-colors"
           >
-            <X className="h-6 w-6" />
+            <X className="h-5 w-5" />
           </button>
         </div>
 
@@ -357,23 +370,35 @@ export default function AddEggModal({ isOpen, onClose, onAdd }) {
             </button>
             <button
               type="submit"
-              disabled={isUploading || !selectedImage}
-              className="px-6 py-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-lg font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              disabled={!user || isUploading}
+              className={`w-full py-3 px-4 rounded-lg font-medium transition-all duration-200 ${
+                user 
+                  ? 'bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white shadow-lg hover:shadow-xl' 
+                  : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+              }`}
             >
               {isUploading ? (
-                <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                <span className="flex items-center justify-center">
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
                   Uploading...
-                </>
+                </span>
               ) : (
-                <>
-                  <ImageIcon className="h-4 w-4" />
-                  Add Easter Egg
-                </>
+                <span className="flex items-center justify-center">
+                  <Plus className="h-5 w-5 mr-2" />
+                  {user ? 'Add Easter Egg' : 'Sign In Required'}
+                </span>
               )}
             </button>
           </div>
         </form>
+
+        {!user && (
+          <div className="mt-6 p-4 bg-orange-50 rounded-lg">
+            <p className="text-sm text-orange-800 text-center">
+              <strong>🔐 Sign in required!</strong> You need an account to share Easter eggs with the community.
+            </p>
+          </div>
+        )}
       </div>
     </div>
   )

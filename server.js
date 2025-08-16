@@ -76,6 +76,49 @@ async function uploadImageToStorage(file, easterEggId) {
   }
 }
 
+// Authentication middleware
+const authenticateUser = async (req, res, next) => {
+  try {
+    const authHeader = req.headers.authorization
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ error: 'Authentication required' })
+    }
+
+    const token = authHeader.split(' ')[1]
+    
+    // Decode the simple token
+    try {
+      const decoded = Buffer.from(token, 'base64').toString('utf-8')
+      const [userId, timestamp] = decoded.split(':')
+      
+      // Check if token is not too old (24 hours)
+      const tokenAge = Date.now() - parseInt(timestamp)
+      if (tokenAge > 24 * 60 * 60 * 1000) {
+        return res.status(401).json({ error: 'Token expired' })
+      }
+
+      // Get user profile
+      const { data: userProfile, error: profileError } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', userId)
+        .single()
+
+      if (profileError || !userProfile) {
+        return res.status(404).json({ error: 'User profile not found' })
+      }
+
+      req.user = userProfile
+      next()
+    } catch (decodeError) {
+      return res.status(401).json({ error: 'Invalid token format' })
+    }
+  } catch (error) {
+    console.error('Auth middleware error:', error)
+    res.status(500).json({ error: 'Internal server error' })
+  }
+}
+
 // API Routes
 app.get('/api/easter-eggs', async (req, res) => {
   try {
@@ -96,61 +139,42 @@ app.get('/api/easter-eggs', async (req, res) => {
   }
 });
 
-app.post('/api/easter-eggs', upload.single('image'), async (req, res) => {
+// Update the POST /api/easter-eggs endpoint to require authentication
+app.post('/api/easter-eggs', authenticateUser, upload.single('image'), async (req, res) => {
   try {
     let imageUrl = null;
-    
-    // If an image was uploaded, save it to Supabase Storage
     if (req.file) {
-      try {
-        imageUrl = await uploadImageToStorage(req.file, 'temp');
-      } catch (uploadError) {
-        console.error('Image upload failed:', uploadError);
-        return res.status(500).json({ error: 'Failed to upload image' });
-      }
+      imageUrl = await uploadImageToStorage(req.file, 'temp'); // Upload with temp ID
     }
 
-    // Prepare the Easter egg data
     const easterEggData = {
       ...req.body,
-      image_url: imageUrl || req.body.image_url, // Use uploaded image or fallback to URL
+      user_id: req.user.id,
+      username: req.user.username,
+      image_url: imageUrl || req.body.image_url,
       upvotes_count: 0,
       comments_count: 0,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
     };
 
-    // Insert the Easter egg
-    const { data, error } = await supabase
-      .from('easter_eggs')
-      .insert([easterEggData])
-      .select()
-      .single();
-
+    const { data, error } = await supabase.from('easter_eggs').insert([easterEggData]).select().single();
     if (error) {
-      console.error('Error adding Easter egg:', error);
-      return res.status(500).json({ error: 'Failed to add Easter egg' });
+      console.error('Error inserting Easter egg:', error);
+      return res.status(500).json({ error: 'Failed to create Easter egg' });
     }
 
-    // If image was uploaded, update the filename with the actual Easter egg ID
+    // If image was uploaded, rename it with the actual Easter egg ID
     if (req.file && imageUrl) {
       try {
+        const oldFileName = `temp-${Date.now()}-${req.file.originalname}`;
         const newFileName = `${data.id}-${Date.now()}-${req.file.originalname}`;
         const { error: renameError } = await supabase.storage
           .from('easter-egg-images')
-          .move(`temp-${Date.now()}-${req.file.originalname}`, newFileName);
-
+          .move(oldFileName, newFileName);
         if (!renameError) {
-          // Update the public URL
-          const { data: { publicUrl } } = supabase.storage
-            .from('easter-egg-images')
-            .getPublicUrl(newFileName);
-
-          // Update the Easter egg with the new image URL
-          await supabase
-            .from('easter_eggs')
-            .update({ image_url: publicUrl })
-            .eq('id', data.id);
+          const { data: { publicUrl } } = supabase.storage.from('easter-egg-images').getPublicUrl(newFileName);
+          await supabase.from('easter_eggs').update({ image_url: publicUrl }).eq('id', data.id);
         }
       } catch (renameError) {
         console.error('Error renaming uploaded image:', renameError);
@@ -159,7 +183,7 @@ app.post('/api/easter-eggs', upload.single('image'), async (req, res) => {
 
     res.status(201).json(data);
   } catch (error) {
-    console.error('Error in /api/easter-eggs POST:', error);
+    console.error('Error in /api/easter-eggs:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -184,14 +208,16 @@ app.get('/api/easter-eggs/:id/comments', async (req, res) => {
   }
 });
 
-app.post('/api/comments', async (req, res) => {
+app.post('/api/comments', authenticateUser, async (req, res) => {
   try {
-    // First, insert the comment
-    const { data: comment, error: commentError } = await supabase
-      .from('comments')
-      .insert([req.body])
-      .select()
-      .single();
+    const commentData = {
+      ...req.body,
+      user_id: req.user.id,
+      username: req.user.username,
+      created_at: new Date().toISOString()
+    }
+
+    const { data: comment, error: commentError } = await supabase.from('comments').insert([commentData]).select().single()
 
     if (commentError) {
       console.error('Error adding comment:', commentError);
@@ -258,58 +284,139 @@ app.get('/api/easter-eggs/:id/comment-count', async (req, res) => {
 });
 
 // Add endpoint to upvote an Easter egg
-app.post('/api/easter-eggs/:id/upvote', async (req, res) => {
+app.post('/api/easter-eggs/:id/upvote', authenticateUser, async (req, res) => {
   try {
     const { id } = req.params
-    const { action } = req.body // 'upvote' or 'downvote'
+    const userId = req.user.id
     
-    // Get current upvote count
-    const { data: currentEgg, error: fetchError } = await supabase
-      .from('easter_eggs')
-      .select('upvotes_count')
-      .eq('id', id)
+    // Check if user already liked this Easter egg
+    const { data: existingLike, error: likeCheckError } = await supabase
+      .from('user_likes')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('easter_egg_id', id)
       .single()
 
-    if (fetchError) {
-      console.error('Error fetching Easter egg:', fetchError)
-      return res.status(500).json({ error: 'Failed to fetch Easter egg' })
-    }
+    if (existingLike) {
+      // User already liked, so unlike it
+      const { error: unlikeError } = await supabase
+        .from('user_likes')
+        .delete()
+        .eq('user_id', userId)
+        .eq('easter_egg_id', id)
 
-    if (!currentEgg) {
-      return res.status(404).json({ error: 'Easter egg not found' })
-    }
+      if (unlikeError) {
+        console.error('Error removing like:', unlikeError)
+        return res.status(500).json({ error: 'Failed to remove like' })
+      }
 
-    // Calculate new upvote count
-    let newUpvoteCount = currentEgg.upvotes_count || 0
-    if (action === 'upvote') {
-      newUpvoteCount += 1
-    } else if (action === 'downvote') {
-      newUpvoteCount = Math.max(0, newUpvoteCount - 1)
-    }
+      // Decrease upvote count
+      const { data: currentEgg, error: fetchError } = await supabase
+        .from('easter_eggs')
+        .select('upvotes_count')
+        .eq('id', id)
+        .single()
 
-    // Update the upvote count
-    const { data: updatedEgg, error: updateError } = await supabase
-      .from('easter_eggs')
-      .update({ 
+      if (fetchError) {
+        console.error('Error fetching Easter egg:', fetchError)
+        return res.status(500).json({ error: 'Failed to fetch Easter egg' })
+      }
+
+      const newUpvoteCount = Math.max(0, (currentEgg.upvotes_count || 0) - 1)
+
+      const { error: updateError } = await supabase
+        .from('easter_eggs')
+        .update({ 
+          upvotes_count: newUpvoteCount,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', id)
+
+      if (updateError) {
+        console.error('Error updating upvote count:', updateError)
+        return res.status(500).json({ error: 'Failed to update upvote count' })
+      }
+
+      res.json({ 
+        success: true, 
         upvotes_count: newUpvoteCount,
-        updated_at: new Date().toISOString()
+        action: 'unliked',
+        liked: false
       })
-      .eq('id', id)
-      .select()
-      .single()
+    } else {
+      // User hasn't liked, so like it
+      const { error: likeError } = await supabase
+        .from('user_likes')
+        .insert([{
+          user_id: userId,
+          easter_egg_id: id,
+          created_at: new Date().toISOString()
+        }])
 
-    if (updateError) {
-      console.error('Error updating upvote count:', updateError)
-      return res.status(500).json({ error: 'Failed to update upvote count' })
+      if (likeError) {
+        console.error('Error adding like:', likeError)
+        return res.status(500).json({ error: 'Failed to add like' })
+      }
+
+      // Increase upvote count
+      const { data: currentEgg, error: fetchError } = await supabase
+        .from('easter_eggs')
+        .select('upvotes_count')
+        .eq('id', id)
+        .single()
+
+      if (fetchError) {
+        console.error('Error fetching Easter egg:', fetchError)
+        return res.status(500).json({ error: 'Failed to fetch Easter egg' })
+      }
+
+      const newUpvoteCount = (currentEgg.upvotes_count || 0) + 1
+
+      const { error: updateError } = await supabase
+        .from('easter_eggs')
+        .update({ 
+          upvotes_count: newUpvoteCount,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', id)
+
+      if (updateError) {
+        console.error('Error updating upvote count:', updateError)
+        return res.status(500).json({ error: 'Failed to update upvote count' })
+      }
+
+      res.json({ 
+        success: true, 
+        upvotes_count: newUpvoteCount,
+        action: 'liked',
+        liked: true
+      })
     }
-
-    res.json({ 
-      success: true, 
-      upvotes_count: newUpvoteCount,
-      action: action 
-    })
   } catch (error) {
     console.error('Error in /api/easter-eggs/:id/upvote:', error)
+    res.status(500).json({ error: 'Internal server error' })
+  }
+});
+
+// Add endpoint to check if user has liked an Easter egg
+app.get('/api/easter-eggs/:id/like-status', authenticateUser, async (req, res) => {
+  try {
+    const { id } = req.params
+    const userId = req.user.id
+    
+    const { data: existingLike, error: likeCheckError } = await supabase
+      .from('user_likes')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('easter_egg_id', id)
+      .single()
+
+    res.json({ 
+      liked: !!existingLike,
+      upvotes_count: 0 // This will be updated by the frontend
+    })
+  } catch (error) {
+    console.error('Error in /api/easter-eggs/:id/like-status:', error)
     res.status(500).json({ error: 'Internal server error' })
   }
 });
@@ -336,6 +443,208 @@ app.get('/api/easter-eggs/:id/upvote-count', async (req, res) => {
     res.status(500).json({ error: 'Internal server error' })
   }
 });
+
+// Test endpoint to check database connection
+app.get('/api/test', async (req, res) => {
+  try {
+    // Test if we can connect to Supabase
+    const { data, error } = await supabase.from('users').select('count').limit(1)
+    
+    if (error) {
+      console.error('Database test error:', error)
+      return res.status(500).json({ 
+        error: 'Database connection failed', 
+        details: error.message,
+        hint: 'Make sure to run the QUICK_FIX.sql script in your Supabase dashboard'
+      })
+    }
+    
+    res.json({ 
+      success: true, 
+      message: 'Database connection successful',
+      usersTableExists: true
+    })
+  } catch (error) {
+    console.error('Test endpoint error:', error)
+    res.status(500).json({ 
+      error: 'Test failed', 
+      details: error.message 
+    })
+  }
+})
+
+// Add endpoint to register a new user
+app.post('/api/auth/register', async (req, res) => {
+  try {
+    const { username, password } = req.body
+
+    if (!username || !password) {
+      return res.status(400).json({ error: 'Username and password are required' })
+    }
+
+    if (username.trim() === '') {
+      return res.status(400).json({ error: 'Username cannot be empty' })
+    }
+
+    if (password.length < 6) {
+      return res.status(400).json({ error: 'Password must be at least 6 characters long' })
+    }
+
+    // Check if username already exists
+    const { data: existingUser, error: checkError } = await supabase
+      .from('users')
+      .select('username')
+      .eq('username', username)
+      .single()
+
+    if (existingUser) {
+      return res.status(400).json({ error: 'Username already exists' })
+    }
+
+    // Create user profile in our users table with a simple hash
+    const bcrypt = require('bcrypt')
+    const hashedPassword = await bcrypt.hash(password, 10)
+    
+    const { data: userProfile, error: profileError } = await supabase
+      .from('users')
+      .insert([{
+        username: username,
+        password_hash: hashedPassword,
+        created_at: new Date().toISOString()
+      }])
+      .select()
+      .single()
+
+    if (profileError) {
+      console.error('Profile creation error:', profileError)
+      return res.status(500).json({ error: 'Failed to create user profile' })
+    }
+
+    // Create a simple session token
+    const sessionToken = Buffer.from(`${userProfile.id}:${Date.now()}`).toString('base64')
+
+    res.status(201).json({ 
+      success: true, 
+      user: { id: userProfile.id, username: userProfile.username },
+      sessionToken: sessionToken,
+      message: 'User registered successfully' 
+    })
+  } catch (error) {
+    console.error('Error in /api/auth/register:', error)
+    res.status(500).json({ error: 'Internal server error' })
+  }
+})
+
+// Add endpoint to login user
+app.post('/api/auth/login', async (req, res) => {
+  try {
+    const { username, password } = req.body
+
+    if (!username || !password) {
+      return res.status(400).json({ error: 'Username and password are required' })
+    }
+
+    // Get user profile with password hash
+    const { data: userProfile, error: profileError } = await supabase
+      .from('users')
+      .select('*')
+      .eq('username', username)
+      .single()
+
+    if (profileError || !userProfile) {
+      return res.status(401).json({ error: 'Invalid username or password' })
+    }
+
+    // Verify password
+    const bcrypt = require('bcrypt')
+    const isValidPassword = await bcrypt.compare(password, userProfile.password_hash)
+
+    if (!isValidPassword) {
+      return res.status(401).json({ error: 'Invalid username or password' })
+    }
+
+    // Create session token
+    const sessionToken = Buffer.from(`${userProfile.id}:${Date.now()}`).toString('base64')
+
+    res.json({ 
+      success: true, 
+      user: { id: userProfile.id, username: userProfile.username },
+      sessionToken: sessionToken,
+      message: 'Login successful' 
+    })
+  } catch (error) {
+    console.error('Error in /api/auth/login:', error)
+    res.status(500).json({ error: 'Internal server error' })
+  }
+ })
+
+// Add endpoint to logout user
+app.post('/api/auth/logout', async (req, res) => {
+  try {
+    const { sessionToken } = req.body
+
+    if (!sessionToken) {
+      return res.status(400).json({ error: 'Session token required' })
+    }
+
+    // Sign out from Supabase
+    const { error } = await supabase.auth.signOut()
+
+    if (error) {
+      console.error('Logout error:', error)
+    }
+
+    res.json({ success: true, message: 'Logout successful' })
+  } catch (error) {
+    console.error('Error in /api/auth/logout:', error)
+    res.status(500).json({ error: 'Internal server error' })
+  }
+})
+
+// Add endpoint to get current user
+app.get('/api/auth/me', async (req, res) => {
+  try {
+    const authHeader = req.headers.authorization
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ error: 'No token provided' })
+    }
+
+    const token = authHeader.split(' ')[1]
+    
+    // Decode the simple token
+    try {
+      const decoded = Buffer.from(token, 'base64').toString('utf-8')
+      const [userId, timestamp] = decoded.split(':')
+      
+      // Check if token is not too old (24 hours)
+      const tokenAge = Date.now() - parseInt(timestamp)
+      if (tokenAge > 24 * 60 * 60 * 1000) {
+        return res.status(401).json({ error: 'Token expired' })
+      }
+
+      // Get user profile
+      const { data: userProfile, error: profileError } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', userId)
+        .single()
+
+      if (profileError || !userProfile) {
+        return res.status(404).json({ error: 'User profile not found' })
+      }
+
+      res.json({ 
+        success: true, 
+        user: { id: userProfile.id, username: userProfile.username }
+      })
+    } catch (decodeError) {
+      return res.status(401).json({ error: 'Invalid token format' })
+    }
+  } catch (error) {
+    console.error('Error in /api/auth/me:', error)
+    res.status(500).json({ error: 'Internal server error' })
+  }
+})
 
 // Serve React app in production
 if (process.env.NODE_ENV === 'production') {
