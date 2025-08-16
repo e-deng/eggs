@@ -1,12 +1,5 @@
-name = "eggs-easter-eggs-app"
-compatibility_date = "2024-01-01"
+name = "egg"
 
 [build]
 command = "npm run build"
-output_directory = "build"
-
-[env.production]
-name = "eggs-easter-eggs-app"
-
-[env.preview]
-name = "eggs-easter-eggs-app-preview"
+output_directory = "build" 
