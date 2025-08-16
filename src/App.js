@@ -15,7 +15,6 @@ import MobileUserProfile from "./components/MobileUserProfile"
 import { easterEggsService, commentsService, likesService, commentLikesService } from "./services/supabaseService"
 import { authService } from "./services/supabaseService"
 import { getAlbumColors } from "./utils/albumColors"
-import { supabase } from "./supabaseClient"
 
 export default function App() {
   const [easterEggs, setEasterEggs] = useState([])
@@ -214,7 +213,7 @@ export default function App() {
     if (!replyText.trim() || !selectedEgg) return
 
     try {
-      const { data: reply, error } = await commentsService.addReply(parentCommentId, {
+      const { error } = await commentsService.addReply(parentCommentId, {
         easter_egg_id: selectedEgg.id,
         user_id: user.id,
         username: user.username, // Use 'username' field as per actual database schema
@@ -287,8 +286,6 @@ export default function App() {
   // Handle updating an Easter egg
   const handleUpdateEgg = async (eggId, updatedData) => {
     try {
-      console.log('Updating egg:', eggId, 'with data:', updatedData)
-      
       // Convert FormData to regular object for Supabase
       const eggData = {
         title: updatedData.get('title'),
@@ -308,16 +305,11 @@ export default function App() {
         eggData.video_url = null
       }
       
-      console.log('Processed egg data:', eggData)
-      
       const { data, error } = await easterEggsService.updateEasterEgg(eggId, eggData)
       
       if (error) {
-        console.error('Supabase update error:', error)
         throw new Error('Failed to update Easter egg')
       }
-      
-      console.log('Update successful:', data)
 
       // Refresh the Easter eggs list
       await loadEasterEggs()

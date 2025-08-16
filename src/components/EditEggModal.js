@@ -129,17 +129,6 @@ export default function EditEggModal({ isOpen, onClose, egg, onUpdate, user }) {
         formDataToSend.append('remove_video', 'true')
       }
       
-      console.log('EditEggModal: Submitting form with data:', formDataToSend)
-      console.log('EditEggModal: Form fields:', {
-        title: formDataToSend.get('title'),
-        description: formDataToSend.get('description'),
-        album: formDataToSend.get('album'),
-        media_type: formDataToSend.get('media_type'),
-        clue_type: formDataToSend.get('clue_type'),
-        remove_image: formDataToSend.get('remove_image'),
-        remove_video: formDataToSend.get('remove_video')
-      })
-      
       // Call the update function
       await onUpdate(egg.id, formDataToSend)
       

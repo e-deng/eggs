@@ -1,5 +1,5 @@
 import React from "react"
-import { X, User, Settings, LogOut } from "lucide-react"
+import { X, User, LogOut } from "lucide-react"
 
 export default function MobileUserProfile({ isOpen, onClose, user, onLogout, onOpenUserSettings }) {
   if (!isOpen) return null
@@ -51,9 +51,9 @@ export default function MobileUserProfile({ isOpen, onClose, user, onLogout, onO
               © 2025 TS Easter Eggs. Fan-made website.
             </p>
             <div className="flex justify-center space-x-3 text-xs text-gray-400">
-              <a href="#" className="hover:text-orange-500 transition-colors">Privacy</a>
-              <a href="#" className="hover:text-orange-500 transition-colors">Terms</a>
-              <a href="https://forms.gle/6zFMZciLH7jPMFMUA" className="hover:text-orange-500 transition-colors">Feedback</a>
+              <button className="hover:text-orange-500 transition-colors">Privacy</button>
+              <button className="hover:text-orange-500 transition-colors">Terms</button>
+              <a href="https://forms.gle/6zFMZciLH7jPMFMUA" target="_blank" rel="noopener noreferrer" className="hover:text-orange-500 transition-colors">Feedback</a>
             </div>
             <p className="text-xs text-gray-300 leading-tight">
               Not affiliated with Taylor Swift. Fan-created content only.

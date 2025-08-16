@@ -142,15 +142,11 @@ export const easterEggsService = {
 
   // Update easter egg
   async updateEasterEgg(id, updates) {
-    console.log('Service: Updating easter egg', id, 'with:', updates)
-    
     const { data, error } = await supabase
       .from('easter_eggs')
       .update(updates)
       .eq('id', id)
       .select()
-    
-    console.log('Service: Update result:', { data, error })
     return { data, error }
   },
 
@@ -339,7 +335,7 @@ export const commentsService = {
 
       
       // Get the parent comment to include its username in the reply
-      const { data: parentComment, error: parentError } = await supabase
+      const { error: parentError } = await supabase
         .from('comments')
         .select('username')
         .eq('id', parentCommentId)
@@ -620,25 +616,6 @@ export const commentLikesService = {
     } catch (error) {
       console.error('Error in updateCommentUpvotesCount:', error)
     }
-  },
-
-  // Get real-time upvote count for a comment from comment_likes table
-  async getCommentUpvoteCount(commentId) {
-    try {
-      const { count, error } = await supabase
-        .from('comment_likes')
-        .select('*', { count: 'exact', head: true })
-        .eq('comment_id', commentId)
-      
-      if (error) {
-        console.error('Error fetching comment upvote count:', error)
-        return 0
-      }
-      
-      return count || 0
-    } catch (error) {
-      console.error('Error in getCommentUpvoteCount:', error)
-      return 0
-    }
   }
+
 } 

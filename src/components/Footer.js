@@ -9,9 +9,9 @@ export default function Footer() {
             © 2025 TS Easter Eggs. Fan-made website.
           </p>
           <div className="flex space-x-4 text-xs text-gray-400">
-            <a href="#" className="hover:text-orange-500 transition-colors">Privacy</a>
-            <a href="#" className="hover:text-orange-500 transition-colors">Terms</a>
-            <a href="#" className="hover:text-orange-500 transition-colors">DMCA</a>
+            <button className="hover:text-orange-500 transition-colors">Privacy</button>
+            <button className="hover:text-orange-500 transition-colors">Terms</button>
+            <button className="hover:text-orange-500 transition-colors">DMCA</button>
             <a href="https://forms.gle/6zFMZciLH7jPMFMUA" target="_blank" rel="noopener noreferrer" className="hover:text-orange-500 transition-colors">Feedback</a>
             <a href="https://forms.gle/6zFMZciLH7jPMFMUA" target="_blank" rel="noopener noreferrer" className="hover:text-orange-500 transition-colors">Report Issues</a>
           </div>
