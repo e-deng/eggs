@@ -16,7 +16,8 @@ export default function EasterEggModal({
   getAlbumColors,
   currentUser,
   onReply,
-  onUpvote
+  onUpvote,
+  onDelete
 }) {
   const [zoomedImage, setZoomedImage] = useState(null)
   
@@ -181,6 +182,7 @@ export default function EasterEggModal({
               currentUser={currentUser}
               onReply={onReply}
               onUpvote={onUpvote}
+              onDelete={onDelete}
             />
           </div>
         </div>

@@ -10,7 +10,8 @@ export default function CommentsSection({
   onAddComment,
   currentUser,
   onReply,
-  onUpvote
+  onUpvote,
+  onDelete
 }) {
   return (
     <div className="border-t border-gray-200 pt-4">
@@ -52,6 +53,7 @@ export default function CommentsSection({
             currentUser={currentUser}
             onReply={onReply}
             onUpvote={onUpvote}
+            onDelete={onDelete}
           />
         ))}
 

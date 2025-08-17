@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from "react"
 import { X } from "lucide-react"
 import { parseImageUrls } from "../utils/imageUtils"
+import ConfirmDialog from "./ConfirmDialog"
 
-export default function EditEggModal({ isOpen, onClose, egg, onUpdate, user }) {
+export default function EditEggModal({ isOpen, onClose, egg, onUpdate, onDelete, user }) {
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -15,6 +16,7 @@ export default function EditEggModal({ isOpen, onClose, egg, onUpdate, user }) {
   const [isUploading, setIsUploading] = useState(false)
   const [removeCurrentImages, setRemoveCurrentImages] = useState(false)
   const [deletedImageUrls, setDeletedImageUrls] = useState([])
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
 
   const albums = ["Taylor Swift", "Fearless", "Speak Now", "Red", "1989", "Reputation", "Lover", "Folklore", "Evermore", "Midnights", "TTPD", "The Life of a Showgirl"]
   const mediaTypes = ["Album Art", "Music Video", "Music", "Performance", "Interview", "Social Media", "Other"]
@@ -319,32 +321,53 @@ export default function EditEggModal({ isOpen, onClose, egg, onUpdate, user }) {
             )}
 
             {/* Submit Button */}
-            <div className="flex justify-end gap-3 pt-4">
+            <div className="flex justify-between items-center pt-4">
               <button
                 type="button"
-                onClick={onClose}
-                className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+                onClick={() => setShowDeleteConfirm(true)}
+                className="px-6 py-2 border border-red-300 rounded-lg text-red-600 hover:bg-red-50 transition-colors"
               >
-                Cancel
+                Delete Post
               </button>
-              <button
-                type="submit"
-                disabled={isUploading}
-                className="bg-orange-600 hover:bg-orange-700 text-white px-6 py-2 rounded-lg font-medium transition-colors disabled:opacity-50"
-              >
-                {isUploading ? (
-                  <span className="flex items-center">
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                    Updating...
-                  </span>
-                ) : (
-                  'Update Easter Egg'
-                )}
-              </button>
+              
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isUploading}
+                  className="bg-orange-600 hover:bg-orange-700 text-white px-6 py-2 rounded-lg font-medium transition-colors disabled:opacity-50"
+                >
+                  {isUploading ? (
+                    <span className="flex items-center">
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                      Updating...
+                    </span>
+                  ) : (
+                    'Update Easter Egg'
+                  )}
+                </button>
+              </div>
             </div>
           </form>
         </div>
       </div>
+      
+      {/* Delete Confirmation Dialog */}
+      <ConfirmDialog
+        isOpen={showDeleteConfirm}
+        onClose={() => setShowDeleteConfirm(false)}
+        onConfirm={() => onDelete && onDelete(egg.id)}
+        title="Delete Post"
+        message="Are you sure you want to delete this post? This action cannot be undone and will delete all comments and images."
+        confirmText="Delete Post"
+        type="danger"
+      />
     </div>
   )
 } 

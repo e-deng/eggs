@@ -11,6 +11,7 @@ export default function EasterEggsGrid({
   loading,
   currentUser,
   onEditEgg,
+  onDeleteEgg,
   activeTab
 }) {
   if (loading) {
@@ -48,6 +49,7 @@ export default function EasterEggsGrid({
           getAlbumColors={getAlbumColors}
           currentUser={currentUser}
           onEditEgg={onEditEgg}
+          onDeleteEgg={onDeleteEgg}
           activeTab={activeTab}
         />
       ))}

@@ -1,5 +1,5 @@
 import React from "react"
-import { Home, Search, Plus, User, Heart } from "lucide-react"
+import { Home, Search, Plus, User, HeartIcon } from "lucide-react"
 
 export default function BottomNavigation({ 
   activeTab, 
@@ -70,7 +70,7 @@ export default function BottomNavigation({
               : "text-gray-500 hover:text-orange-600"
           }`}
         >
-          <Heart className="h-5 w-5" />
+          <HeartIcon className="h-5 w-5" />
           <span className="text-xs font-medium">Favorites</span>
         </button>
       </div>

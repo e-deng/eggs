@@ -11,6 +11,7 @@ export default function EasterEggCard({
   getAlbumColors,
   currentUser,
   onEditEgg,
+  onDeleteEgg,
   activeTab
 }) {
   const [zoomedImage, setZoomedImage] = useState(null)

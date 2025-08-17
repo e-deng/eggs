@@ -9,6 +9,7 @@ import AuthNotice from "./components/AuthNotice"
 import LoginPrompt from "./components/LoginPrompt"
 import NoPostsMessage from "./components/NoPostsMessage"
 import TopNavigation from "./components/TopNavigation"
+import MobileSearch from "./components/MobileSearch"
 import BottomNavigation from "./components/BottomNavigation"
 import Footer from "./components/Footer"
 import MobileUserProfile from "./components/MobileUserProfile"
@@ -168,6 +169,26 @@ export default function App() {
       }
     } catch (error) {
       console.error("Error adding comment:", error)
+    }
+  }
+
+  // Handle deleting a comment
+  const handleDeleteComment = async (commentId) => {
+    try {
+      const { error } = await commentsService.deleteComment(commentId)
+      
+      if (error) {
+        throw new Error('Failed to delete comment')
+      }
+
+      // Refresh comments
+      await loadComments(selectedEgg.id)
+      
+      // Show success message
+      alert('Comment deleted successfully')
+    } catch (error) {
+      console.error('Error deleting comment:', error)
+      alert('Failed to delete comment. Please try again.')
     }
   }
 
@@ -479,6 +500,42 @@ export default function App() {
     }
   }
 
+  // Handle deleting an Easter egg
+  const handleDeleteEgg = async (eggId) => {
+    try {
+      // Import the parseImageUrls utility
+      const { parseImageUrls } = await import('./utils/imageUtils.js')
+      
+      // Get the egg data first to delete associated images
+      const eggToDelete = easterEggs.find(egg => egg.id === eggId)
+      if (eggToDelete && eggToDelete.image_url) {
+        const imagesToDelete = parseImageUrls(eggToDelete.image_url)
+        await deleteImagesFromStorage(imagesToDelete)
+      }
+      
+      // Delete the egg from the database
+      const { error } = await easterEggsService.deleteEasterEgg(eggId)
+      
+      if (error) {
+        throw new Error('Failed to delete Easter egg')
+      }
+
+      // Refresh the Easter eggs list
+      await loadEasterEggs()
+      
+      // Close any open modals
+      setIsEditEggModalOpen(false)
+      setEditingEgg(null)
+      setSelectedEgg(null)
+      
+      // Show success message
+      alert('Post deleted successfully')
+    } catch (error) {
+      console.error('Error deleting egg:', error)
+      alert('Failed to delete post. Please try again.')
+    }
+  }
+
   // Handle adding a new Easter egg
   const handleAddEgg = async (newEgg) => {
     if (!user) {
@@ -718,6 +775,18 @@ export default function App() {
           setSortBy={setSortBy}
         />
 
+        {/* Mobile Search - Only show on search tab */}
+        {activeTab === 'search' && (
+          <MobileSearch
+            searchQuery={searchQuery}
+            setSearchQuery={setSearchQuery}
+            selectedAlbum={selectedAlbum}
+            setSelectedAlbum={setSelectedAlbum}
+            sortBy={sortBy}
+            setSortBy={setSortBy}
+          />
+        )}
+
         {/* Content based on active tab and authentication */}
         {activeTab === 'post' && !user ? (
           <LoginPrompt 
@@ -785,6 +854,7 @@ export default function App() {
             loading={loading}
             currentUser={user}
             onEditEgg={handleEditEgg}
+            onDeleteEgg={handleDeleteEgg}
             activeTab={activeTab}
           />
         )}
@@ -808,6 +878,7 @@ export default function App() {
           currentUser={user}
           onReply={handleAddReply}
           onUpvote={handleCommentUpvote}
+          onDelete={handleDeleteComment}
         />
       )}
 
@@ -824,6 +895,7 @@ export default function App() {
         isOpen={isEditEggModalOpen}
         onClose={() => setIsEditEggModalOpen(false)}
         onUpdate={handleUpdateEgg}
+        onDelete={handleDeleteEgg}
         egg={editingEgg}
         user={user}
       />
