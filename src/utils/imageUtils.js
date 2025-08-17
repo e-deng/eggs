@@ -152,17 +152,6 @@ function validateAndFilterUrls(urls) {
   })
 }
 
-// Helper function to validate URLs (defined at the top level)
-function isValidUrl(str) {
-  if (typeof str !== 'string') return false
-  try {
-    const url = new URL(str)
-    return url.protocol === 'http:' || url.protocol === 'https:'
-  } catch {
-    return false
-  }
-}
-
 /**
  * Safely gets the first image URL from various formats
  * @param {any} imageUrl - The image_url value from the database

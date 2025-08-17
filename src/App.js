@@ -326,7 +326,7 @@ export default function App() {
             const imagePath = `${Date.now()}-${imageFile.name}`
             
             // Upload to Supabase storage
-            const { data: uploadData, error: uploadError } = await supabase.storage
+            const { error: uploadError } = await supabase.storage
               .from('easter-egg-images')
               .upload(imagePath, imageFile)
 
@@ -371,7 +371,7 @@ export default function App() {
           const videoPath = `${Date.now()}-${videoFile.name}`
           
           // Upload to Supabase storage
-          const { data: uploadData, error: uploadError } = await supabase.storage
+          const { error: uploadError } = await supabase.storage
             .from('easter-egg-videos')
             .upload(videoPath, videoFile)
 
@@ -494,59 +494,6 @@ export default function App() {
     }
   }
 
-  // Handle deleting an Easter egg
-  const handleDeleteEgg = async (eggId) => {
-    try {
-      console.log('Deleting egg with ID:', eggId)
-      
-      // Import the parseImageUrls utility
-      const { parseImageUrls } = await import('./utils/imageUtils.js')
-      
-      // Get the egg data first to delete associated images
-      const eggToDelete = easterEggs.find(egg => egg.id === eggId)
-      console.log('Egg to delete:', eggToDelete)
-      
-      if (eggToDelete && eggToDelete.image_url) {
-        const imagesToDelete = parseImageUrls(eggToDelete.image_url)
-        console.log('Images to delete from storage:', imagesToDelete)
-        await deleteImagesFromStorage(imagesToDelete)
-      }
-      
-      // Delete the egg from the database
-      console.log('Deleting from database...')
-      const { error } = await easterEggsService.deleteEasterEgg(eggId)
-      
-      if (error) {
-        console.error('Database deletion error:', error)
-        throw new Error('Failed to delete Easter egg')
-      }
-
-      console.log('Successfully deleted from database')
-      
-      // Close any open modals first
-      setIsEditEggModalOpen(false)
-      setEditingEgg(null)
-      setSelectedEgg(null)
-      
-      // Force refresh the Easter eggs list
-      console.log('Refreshing Easter eggs list...')
-      await loadEasterEggs()
-      
-      // Also clear the selected egg if it was the deleted one
-      if (selectedEgg && selectedEgg.id === eggId) {
-        setSelectedEgg(null)
-      }
-      
-      console.log('Refresh complete')
-      
-      // Show success message
-      alert('Post deleted successfully')
-    } catch (error) {
-      console.error('Error deleting egg:', error)
-      alert('Failed to delete post. Please try again.')
-    }
-  }
-
   // Handle adding a new Easter egg
   const handleAddEgg = async (newEgg) => {
     if (!user) {
@@ -565,7 +512,7 @@ export default function App() {
             const imagePath = `${Date.now()}-${imageFile.name}`
             
             // Upload to Supabase storage
-            const { data: uploadData, error: uploadError } = await supabase.storage
+            const { error: uploadError } = await supabase.storage
               .from('easter-egg-images')
               .upload(imagePath, imageFile)
 
@@ -610,7 +557,7 @@ export default function App() {
           const videoPath = `${Date.now()}-${videoFile.name}`
           
           // Upload to Supabase storage
-          const { data: uploadData, error: uploadError } = await supabase.storage
+          const { error: uploadError } = await supabase.storage
             .from('easter-egg-videos')
             .upload(videoPath, videoFile)
 

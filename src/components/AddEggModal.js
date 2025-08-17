@@ -422,7 +422,7 @@ export default function AddEggModal({ isOpen, onClose, onAdd, user }) {
                     <div key={index} className="relative">
                       <img
                         src={preview}
-                        alt={`Image ${index + 1}`}
+                        alt={`${index + 1}`}
                         className="w-full h-24 object-cover rounded-lg border border-gray-200"
                       />
                       <button

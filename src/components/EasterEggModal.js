@@ -96,7 +96,7 @@ export default function EasterEggModal({
                             <img
                               key={index}
                               src={imageUrl}
-                              alt={`${selectedEgg.title} - Image ${index + 1}`}
+                              alt={`${index + 1}`}
                               className="w-full h-48 object-cover rounded-2xl cursor-pointer hover:opacity-90 transition-opacity"
                               onClick={() => openImageZoom(imageUrl)}
                             />
@@ -197,7 +197,7 @@ export default function EasterEggModal({
           <div className="relative max-w-full max-h-full">
             <img
               src={zoomedImage}
-              alt="Zoomed image"
+              alt="Zoomed"
               className="max-w-full max-h-full object-contain"
               onClick={(e) => e.stopPropagation()}
             />

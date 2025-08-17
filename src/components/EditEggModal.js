@@ -118,17 +118,6 @@ export default function EditEggModal({ isOpen, onClose, egg, onUpdate, user }) {
     }
   }
 
-  const removeImage = () => {
-    if (egg.image_url) {
-      setRemoveCurrentImages(true)
-      setImagePreviews([])
-      // Mark all current images for deletion
-      setDeletedImageUrls(imagePreviews)
-    }
-  }
-
-
-
   if (!isOpen || !egg) return null
 
   return (
@@ -277,7 +266,7 @@ export default function EditEggModal({ isOpen, onClose, egg, onUpdate, user }) {
                           <div key={index} className="relative">
                             <img
                               src={image}
-                              alt={`Current image ${index + 1}`}
+                              alt={`${index + 1}`}
                               className="w-full h-24 object-cover rounded-lg border border-gray-200"
                               onError={(e) => console.error(`Failed to load image ${index}:`, image, e)}
                               onLoad={() => console.log(`Successfully loaded image ${index}:`, image)}

@@ -117,7 +117,7 @@ export default function EasterEggCard({
                         <img
                           key={index}
                           src={imageUrl}
-                          alt={`${egg.title} - Image ${index + 1}`}
+                          alt={`${index + 1}`}
                           className={`w-full h-40 object-cover rounded-2xl transition-opacity ${
                             activeTab === 'home' ? '' : 'cursor-pointer hover:opacity-90'
                           }`}
@@ -222,7 +222,7 @@ export default function EasterEggCard({
           <div className="relative max-w-full max-h-full">
             <img
               src={zoomedImage}
-              alt="Zoomed image"
+              alt="Zoomed"
               className="max-w-full max-h-full object-contain"
               onClick={(e) => e.stopPropagation()}
             />
