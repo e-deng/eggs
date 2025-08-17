@@ -95,7 +95,6 @@ export default function EditEggModal({ isOpen, onClose, egg, onUpdate, user }) {
       
       onClose()
     } catch (error) {
-      console.error('Error updating egg:', error)
       alert('Failed to update Easter egg. Please try again.')
     } finally {
       setIsUploading(false)
@@ -104,7 +103,6 @@ export default function EditEggModal({ isOpen, onClose, egg, onUpdate, user }) {
 
   const removeIndividualImage = (index) => {
     const imageToRemove = imagePreviews[index]
-    console.log('Removing individual image:', imageToRemove, 'at index:', index)
     
     // Add to deleted images list for backend cleanup
     setDeletedImageUrls(prev => [...prev, imageToRemove])
@@ -268,8 +266,8 @@ export default function EditEggModal({ isOpen, onClose, egg, onUpdate, user }) {
                               src={image}
                               alt={`${index + 1}`}
                               className="w-full h-24 object-cover rounded-lg border border-gray-200"
-                              onError={(e) => console.error(`Failed to load image ${index}:`, image, e)}
-                              onLoad={() => console.log(`Successfully loaded image ${index}:`, image)}
+                              onError={(e) => {/* Failed to load image */}}
+
                             />
                             <button
                               type="button"

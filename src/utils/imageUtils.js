@@ -19,15 +19,7 @@ export function parseImageUrls(imageUrl) {
     return []
   }
 
-  // Helper function to validate if a string is a valid URL
-  const isValidUrl = (str) => {
-    try {
-      const url = new URL(str)
-      return url.protocol === 'http:' || url.protocol === 'https:'
-    } catch {
-      return false
-    }
-  }
+
 
   // If it's already an array, check if it contains JSON strings that need parsing
   if (Array.isArray(imageUrl)) {
@@ -51,7 +43,6 @@ export function parseImageUrls(imageUrl) {
               processedUrls.push(parsed)
             }
           } catch (e) {
-            console.error('Failed to parse JSON string:', e)
             // Don't add malformed items
           }
         } else if (item.startsWith('http://') || item.startsWith('https://')) {
@@ -83,7 +74,6 @@ export function parseImageUrls(imageUrl) {
           return validateAndFilterUrls([parsed])
         }
       } catch (e) {
-        console.error('Failed to parse URL-encoded JSON:', e)
         return [imageUrl]
       }
     }
@@ -127,7 +117,6 @@ export function parseImageUrls(imageUrl) {
 
   // If it's not a string, return empty array
   if (typeof imageUrl !== 'string') {
-    console.warn('Unexpected image_url type:', typeof imageUrl, imageUrl)
     return []
   }
 

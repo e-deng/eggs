@@ -9,7 +9,7 @@ const supabaseAnonKey = process.env.REACT_APP_SUPABASE_ANON_KEY || SUPABASE_CONF
 // Validate configuration
 if (!supabaseUrl || !supabaseAnonKey) {
   if (isProduction && !hasValidSupabaseConfig) {
-    console.error('Production deployment issue: Missing Supabase configuration')
+    // Production deployment issue: Missing Supabase configuration
   }
   
   // Don't create client with invalid values
@@ -21,7 +21,7 @@ try {
   new URL(supabaseUrl)
 } catch (error) {
   if (isProduction) {
-    console.error('Production deployment issue: Invalid Supabase URL')
+    // Production deployment issue: Invalid Supabase URL
   }
   
   throw new Error(`Invalid Supabase URL: ${supabaseUrl}`)

@@ -164,7 +164,6 @@ export const commentsService = {
         .order('created_at', { ascending: false }) // Newest comments first
       
       if (error) {
-        console.error('Error fetching comments:', error)
         return { data: null, error }
       }
       
@@ -181,7 +180,7 @@ export const commentsService = {
           const { data: likes } = await commentLikesService.getUserCommentLikes(currentUserId)
           userCommentLikes = likes || []
         } catch (error) {
-          console.error('Error fetching user comment likes:', error)
+          // Error fetching user comment likes
         }
       }
       
@@ -227,7 +226,7 @@ export const commentsService = {
             commentInMap.upvotes_count = realUpvoteCount
           }
         } catch (error) {
-          console.error(`Error fetching upvote count for comment ${comment.id}:`, error)
+          // Error fetching upvote count for comment
         }
       }
       
@@ -333,7 +332,6 @@ export const commentsService = {
         .single()
       
       if (parentError) {
-        console.error('Error fetching parent comment:', parentError)
         return { data: null, error: 'Parent comment not found' }
       }
       
@@ -350,7 +348,6 @@ export const commentsService = {
         .insert([replyDataWithPrefix])
       
       if (error) {
-        console.error('Error creating reply:', error)
         return { data: null, error }
       }
       
@@ -366,7 +363,6 @@ export const commentsService = {
         error: null 
       }
     } catch (error) {
-      console.error('Error in addReply:', error)
       return { data: null, error: error.message }
     }
   }
@@ -383,13 +379,11 @@ export const likesService = {
         .eq('user_id', userId)
       
       if (error) {
-        console.error('Error fetching user likes:', error)
         return { data: [], error }
       }
       
       return { data: data || [], error: null }
     } catch (error) {
-      console.error('Error in getUserLikes:', error)
       return { data: [], error: error.message }
     }
   },
@@ -405,7 +399,6 @@ export const likesService = {
         .eq('easter_egg_id', easterEggId)
 
       if (checkError) {
-        console.error('Error checking existing like:', checkError)
         return { error: 'Failed to check like status', liked: false }
       }
 
@@ -420,7 +413,6 @@ export const likesService = {
           .eq('easter_egg_id', easterEggId)
         
         if (error) {
-          console.error('Error removing like:', error)
           return { error: 'Failed to remove like', liked: false }
         }
         
@@ -438,7 +430,6 @@ export const likesService = {
           }])
         
         if (error) {
-          console.error('Error adding like:', error)
           return { error: 'Failed to add like', liked: false }
         }
         
@@ -448,7 +439,6 @@ export const likesService = {
         return { error: null, liked: true }
       }
     } catch (error) {
-      console.error('Error in toggleLike:', error)
       return { error: 'Failed to toggle like', liked: false }
     }
   },
@@ -464,7 +454,6 @@ export const likesService = {
         .single()
       
       if (fetchError) {
-        console.error('Error fetching current upvotes count:', fetchError)
         return
       }
       
@@ -478,10 +467,10 @@ export const likesService = {
         .eq('id', easterEggId)
       
       if (updateError) {
-        console.error('Error updating upvotes count:', updateError)
+        // Error updating upvotes count
       }
     } catch (error) {
-      console.error('Error in updateEasterEggLikesCount:', error)
+      // Error in updateEasterEggLikesCount
     }
   }
 }
@@ -508,13 +497,11 @@ export const commentLikesService = {
         .eq('user_id', userId)
       
       if (error) {
-        console.error('Error fetching user comment likes:', error)
         return { data: [], error }
       }
       
       return { data: data || [], error: null }
     } catch (error) {
-      console.error('Error in getUserCommentLikes:', error)
       return { data: [], error: error.message }
     }
   },
@@ -528,13 +515,11 @@ export const commentLikesService = {
         .eq('comment_id', commentId)
       
       if (error) {
-        console.error('Error fetching comment upvote count:', error)
         return 0
       }
       
       return count || 0
     } catch (error) {
-      console.error('Error in getCommentUpvoteCount:', error)
       return 0
     }
   },
@@ -550,7 +535,6 @@ export const commentLikesService = {
         .eq('comment_id', commentId)
 
       if (checkError) {
-        console.error('Error checking existing comment like:', checkError)
         return { error: 'Failed to check like status', liked: false }
       }
 
@@ -565,7 +549,6 @@ export const commentLikesService = {
           .eq('comment_id', commentId)
         
         if (error) {
-          console.error('Error removing comment like:', error)
           return { error: 'Failed to remove like', liked: false }
         }
         
@@ -583,8 +566,7 @@ export const commentLikesService = {
           }])
         
         if (error) {
-          console.error('Error adding comment like:', error)
-          return { error: 'Failed to add like', liked: false }
+          return { error: error.message }
         }
         
         // Update the upvotes count in comments table
@@ -593,7 +575,6 @@ export const commentLikesService = {
         return { error: null, liked: true }
       }
     } catch (error) {
-      console.error('Error in toggleCommentLike:', error)
       return { error: 'Failed to toggle like', liked: false }
     }
   },

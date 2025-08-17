@@ -26,7 +26,7 @@ export default function Comment({
       setReplyText("")
       setShowReplyForm(false)
     } catch (error) {
-      console.error("Error adding reply:", error)
+      // Error adding reply
     } finally {
       setIsSubmitting(false)
     }
@@ -38,7 +38,7 @@ export default function Comment({
       await onUpvote(comment.id)
       // The like state will be updated when comments are refreshed
     } catch (error) {
-      console.error("Error upvoting comment:", error)
+      // Error upvoting comment
     }
   }
 

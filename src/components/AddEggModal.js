@@ -231,7 +231,7 @@ export default function AddEggModal({ isOpen, onClose, onAdd, user }) {
       setVideoPreview(null)
       onClose()
     } catch (error) {
-      console.error('Error submitting form:', error)
+      // Error submitting form
     } finally {
       setIsUploading(false)
     }
@@ -245,10 +245,7 @@ export default function AddEggModal({ isOpen, onClose, onAdd, user }) {
     }))
   }
 
-  const removeImage = () => {
-    setSelectedImages([])
-    setImagePreviews([])
-  }
+
 
   const removeVideo = () => {
     setSelectedVideo(null)

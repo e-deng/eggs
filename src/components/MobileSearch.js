@@ -9,7 +9,7 @@ export default function MobileSearch({
   sortBy,
   setSortBy 
 }) {
-  console.log('MobileSearch rendered with:', { searchQuery, selectedAlbum, sortBy })
+
   const albums = ["All Albums", "Taylor Swift", "Fearless", "Speak Now", "Red", "1989", "Reputation", "Lover", "Folklore", "Evermore", "Midnights", "TTPD", "The Life of a Showgirl"]
 
   return (

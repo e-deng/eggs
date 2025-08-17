@@ -119,7 +119,6 @@ export default function EasterEggModal({
                   }
                   
                   // Handle case where image_url might be malformed
-                  console.warn('Modal - Unexpected image_url format:', imageUrls)
                   return null
                 })()}
               </div>

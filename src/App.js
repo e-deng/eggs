@@ -53,7 +53,6 @@ export default function App() {
         setUser(null)
       }
     } catch (error) {
-      console.error("Auth check failed:", error)
       localStorage.removeItem("user")
       setUser(null)
     }
@@ -71,7 +70,7 @@ export default function App() {
         setUserLikes(new Set(likedEggIds))
       }
     } catch (error) {
-      console.error("Failed to load user likes:", error)
+      // Failed to load user likes
     }
   }, [user])
 
@@ -95,17 +94,14 @@ export default function App() {
   // Load Easter eggs from Supabase
   const loadEasterEggs = async () => {
     try {
-      console.log('Loading Easter eggs from database...')
       const { data: eggs, error } = await easterEggsService.getAllEasterEggs()
       
       if (error) {
         throw new Error('Failed to fetch Easter eggs')
       }
       
-      console.log('Loaded eggs:', eggs?.length || 0, 'eggs')
       setEasterEggs(eggs || [])
     } catch (error) {
-      console.error("Error loading Easter eggs:", error)
       setEasterEggs([])
     } finally {
       setLoading(false)
@@ -129,7 +125,7 @@ export default function App() {
       
       setComments(comments || [])
     } catch (error) {
-      console.error("Error loading comments:", error)
+      // Error loading comments
     }
   }
 
@@ -170,7 +166,7 @@ export default function App() {
         setSelectedEgg(updatedEgg)
       }
     } catch (error) {
-      console.error("Error adding comment:", error)
+      // Error adding comment
     }
   }
 
@@ -203,7 +199,7 @@ export default function App() {
       // Refresh the Easter eggs list to get updated counts
       await loadEasterEggs()
     } catch (error) {
-      console.error("Error updating like:", error)
+      // Error updating like
     }
   }
 
@@ -241,7 +237,7 @@ export default function App() {
         setSelectedEgg(updatedEgg)
       }
     } catch (error) {
-      console.error("Error adding reply:", error)
+      // Error adding reply
     }
   }
 
@@ -263,7 +259,7 @@ export default function App() {
       // Refresh comments to get updated upvote counts
       await loadComments(selectedEgg.id)
     } catch (error) {
-      console.error("Error updating comment like:", error)
+      // Error updating comment like
     }
   }
 
@@ -304,12 +300,12 @@ export default function App() {
             .from('easter-egg-images')
             .remove([filename])
           
-          if (error) {
-            console.error('Failed to delete image from storage:', filename, error)
-          }
+                  if (error) {
+          // Failed to delete image from storage
+        }
         }
       } catch (error) {
-        console.error('Error deleting image from storage:', imageUrl, error)
+        // Error deleting image from storage
       }
     }
   }
@@ -331,7 +327,6 @@ export default function App() {
               .upload(imagePath, imageFile)
 
             if (uploadError) {
-              console.error('Image upload error:', uploadError)
               // Check if it's a bucket not found error
               if (uploadError.message.includes('Bucket not found') || uploadError.message.includes('bucket')) {
                 throw new Error('BUCKET_NOT_FOUND')
@@ -347,7 +342,6 @@ export default function App() {
             imageUrls.push(publicUrl)
           } catch (error) {
             if (error.message.includes('BUCKET_NOT_FOUND') || error.message.includes('bucket') || error.message.includes('not found')) {
-              console.warn('Storage bucket not available, using data URL fallback')
               // Fallback: convert image to data URL and store in database
               const reader = new FileReader()
               const imageDataUrl = await new Promise((resolve, reject) => {
@@ -376,7 +370,6 @@ export default function App() {
             .upload(videoPath, videoFile)
 
           if (uploadError) {
-            console.error('Video upload error:', uploadError)
             // Check if it's a bucket not found error
             if (uploadError.message.includes('Bucket not found') || uploadError.message.includes('bucket')) {
               throw new Error('BUCKET_NOT_FOUND')
@@ -392,7 +385,6 @@ export default function App() {
           videoUrl = publicUrl
         } catch (error) {
           if (error.message.includes('BUCKET_NOT_FOUND') || error.message.includes('bucket') || error.message.includes('not found')) {
-            console.warn('Storage bucket not available, using data URL fallback')
             // Fallback: convert video to data URL and store in database
             const reader = new FileReader()
             const videoDataUrl = await new Promise((resolve, reject) => {
@@ -444,15 +436,11 @@ export default function App() {
         // Handle individual image deletions
         const deletedImageUrls = updatedData.getAll('deleted_images')
         if (deletedImageUrls.length > 0) {
-          console.log('Deleting images:', deletedImageUrls)
           const existingImages = parseImageUrls(editingEgg.image_url)
-          console.log('Existing images:', existingImages)
           const remainingImages = existingImages.filter(img => !deletedImageUrls.includes(img))
-          console.log('Remaining images:', remainingImages)
           
           // Update the database with remaining images
           eggData.image_url = remainingImages.length > 0 ? remainingImages : null
-          console.log('Final image_url for database:', eggData.image_url)
           
           // Delete removed images from storage
           await deleteImagesFromStorage(deletedImageUrls)
@@ -472,15 +460,11 @@ export default function App() {
         eggData.video_url = editingEgg.video_url
       }
       
-      console.log('Updating egg with data:', eggData)
       const { error } = await easterEggsService.updateEasterEgg(eggId, eggData)
       
       if (error) {
-        console.error('Database update error:', error)
         throw new Error('Failed to update Easter egg')
       }
-      
-      console.log('Successfully updated egg in database')
 
       // Refresh the Easter eggs list
       await loadEasterEggs()
@@ -489,7 +473,6 @@ export default function App() {
       setIsEditEggModalOpen(false)
       setEditingEgg(null)
     } catch (error) {
-      console.error('Error updating egg:', error)
       throw error
     }
   }
@@ -517,7 +500,6 @@ export default function App() {
               .upload(imagePath, imageFile)
 
             if (uploadError) {
-              console.error('Image upload error:', uploadError)
               // Check if it's a bucket not found error
               if (uploadError.message.includes('Bucket not found') || uploadError.message.includes('bucket')) {
                 throw new Error('BUCKET_NOT_FOUND')
@@ -533,7 +515,6 @@ export default function App() {
             imageUrls.push(publicUrl)
           } catch (error) {
             if (error.message.includes('BUCKET_NOT_FOUND') || error.message.includes('bucket') || error.message.includes('not found')) {
-              console.warn('Storage bucket not available, using data URL fallback')
               // Fallback: convert image to data URL and store in database
               const reader = new FileReader()
               const imageDataUrl = await new Promise((resolve, reject) => {
@@ -562,7 +543,6 @@ export default function App() {
             .upload(videoPath, videoFile)
 
           if (uploadError) {
-            console.error('Video upload error:', uploadError)
             // Check if it's a bucket not found error
             if (uploadError.message.includes('Bucket not found') || uploadError.message.includes('bucket')) {
               throw new Error('BUCKET_NOT_FOUND')
@@ -578,7 +558,6 @@ export default function App() {
           videoUrl = publicUrl
         } catch (error) {
           if (error.message.includes('BUCKET_NOT_FOUND') || error.message.includes('bucket') || error.message.includes('not found')) {
-            console.warn('Storage bucket not available, using data URL fallback')
             // Fallback: convert video to data URL and store in database
             const reader = new FileReader()
             const videoDataUrl = await new Promise((resolve, reject) => {
@@ -606,8 +585,6 @@ export default function App() {
         video_url: videoUrl
       }
       
-      console.log('Uploading egg with image_url:', eggData.image_url)
-
       const { data: addedEgg, error } = await easterEggsService.createEasterEgg(eggData)
       
       if (error) {
@@ -619,7 +596,6 @@ export default function App() {
         await loadEasterEggs()
       }
     } catch (error) {
-      console.error("Error adding egg:", error)
       throw error
     }
   }
@@ -639,7 +615,7 @@ export default function App() {
       setUserLikes(new Set())
       setIsMobileProfileOpen(false)
     } catch (error) {
-      console.error("Logout error:", error)
+      // Logout error
     }
   }
 
