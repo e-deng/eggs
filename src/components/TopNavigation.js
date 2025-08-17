@@ -76,7 +76,7 @@ export default function TopNavigation({
           {/* Favorites Tab */}
           <button
             onClick={() => onTabChange("favorites")}
-            className={`flex items-center justify-center space-x-2 py-4 px-6 border-b-2 transition-colors w-32 ${
+            className={`flex items-center justify-center space-x-2 py-4 px-6 border-b-2 transition-colors w-36 ${
               activeTab === "favorites" 
                 ? "border-orange-600 text-orange-600" 
                 : user 
