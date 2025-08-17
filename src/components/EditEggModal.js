@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from "react"
 import { X } from "lucide-react"
 import { parseImageUrls } from "../utils/imageUtils"
-import ConfirmDialog from "./ConfirmDialog"
 
-export default function EditEggModal({ isOpen, onClose, egg, onUpdate, onDelete, user }) {
+export default function EditEggModal({ isOpen, onClose, egg, onUpdate, user }) {
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -16,7 +15,6 @@ export default function EditEggModal({ isOpen, onClose, egg, onUpdate, onDelete,
   const [isUploading, setIsUploading] = useState(false)
   const [removeCurrentImages, setRemoveCurrentImages] = useState(false)
   const [deletedImageUrls, setDeletedImageUrls] = useState([])
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
 
   const albums = ["Taylor Swift", "Fearless", "Speak Now", "Red", "1989", "Reputation", "Lover", "Folklore", "Evermore", "Midnights", "TTPD", "The Life of a Showgirl"]
   const mediaTypes = ["Album Art", "Music Video", "Music", "Performance", "Interview", "Social Media", "Other"]
@@ -170,19 +168,26 @@ export default function EditEggModal({ isOpen, onClose, egg, onUpdate, onDelete,
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Album
                 </label>
-                <select
-                  name="album"
-                  value={formData.album}
-                  onChange={handleChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
-                >
-                  <option value="">Select an album</option>
-                  {albums.map((album) => (
-                    <option key={album} value={album}>
-                      {album}
-                    </option>
-                  ))}
-                </select>
+                <div className="relative">
+                  <select
+                    name="album"
+                    value={formData.album}
+                    onChange={handleChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 appearance-none bg-white cursor-pointer"
+                  >
+                    <option value="">Select an album</option>
+                    {albums.map((album) => (
+                      <option key={album} value={album}>
+                        {album}
+                      </option>
+                    ))}
+                  </select>
+                  <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                    <svg className="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -206,38 +211,52 @@ export default function EditEggModal({ isOpen, onClose, egg, onUpdate, onDelete,
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Media Type
                 </label>
-                <select
-                  name="media_type"
-                  value={formData.media_type}
-                  onChange={handleChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
-                >
-                  <option value="">Select media type</option>
-                  {mediaTypes.map((type) => (
-                    <option key={type} value={type}>
-                      {type}
-                    </option>
-                  ))}
-                </select>
+                <div className="relative">
+                  <select
+                    name="media_type"
+                    value={formData.media_type}
+                    onChange={handleChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 appearance-none bg-white cursor-pointer"
+                  >
+                    <option value="">Select media type</option>
+                    {mediaTypes.map((type) => (
+                      <option key={type} value={type}>
+                        {type}
+                      </option>
+                    ))}
+                  </select>
+                  <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                    <svg className="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </div>
+                </div>
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Clue Type
                 </label>
-                <select
-                  name="clue_type"
-                  value={formData.clue_type}
-                  onChange={handleChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
-                >
-                  <option value="">Select clue type</option>
-                  {clueTypes.map((type) => (
-                    <option key={type} value={type}>
-                      {type}
-                    </option>
-                  ))}
-                </select>
+                <div className="relative">
+                  <select
+                    name="clue_type"
+                    value={formData.clue_type}
+                    onChange={handleChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 appearance-none bg-white cursor-pointer"
+                  >
+                    <option value="">Select clue type</option>
+                    {clueTypes.map((type) => (
+                      <option key={type} value={type}>
+                        {type}
+                      </option>
+                    ))}
+                  </select>
+                  <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                    <svg className="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -274,13 +293,7 @@ export default function EditEggModal({ isOpen, onClose, egg, onUpdate, onDelete,
                           </div>
                         ))}
                       </div>
-                      <button
-                        type="button"
-                        onClick={removeImage}
-                        className="mt-2 text-red-600 hover:text-red-700 text-sm font-medium"
-                      >
-                        Remove all current images
-                      </button>
+
                     </div>
                   )
                 } else {
@@ -321,53 +334,33 @@ export default function EditEggModal({ isOpen, onClose, egg, onUpdate, onDelete,
             )}
 
             {/* Submit Button */}
-            <div className="flex justify-between items-center pt-4">
+            <div className="flex flex-col sm:flex-row justify-end items-center pt-4 gap-3">
               <button
                 type="button"
-                onClick={() => setShowDeleteConfirm(true)}
-                className="px-6 py-2 border border-red-300 rounded-lg text-red-600 hover:bg-red-50 transition-colors"
+                onClick={onClose}
+                className="w-full sm:w-auto px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
               >
-                Delete Post
+                Cancel
               </button>
-              
-              <div className="flex gap-3">
-                <button
-                  type="button"
-                  onClick={onClose}
-                  className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={isUploading}
-                  className="bg-orange-600 hover:bg-orange-700 text-white px-6 py-2 rounded-lg font-medium transition-colors disabled:opacity-50"
-                >
-                  {isUploading ? (
-                    <span className="flex items-center">
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                      Updating...
-                    </span>
-                  ) : (
-                    'Update Easter Egg'
-                  )}
-                </button>
-              </div>
+              <button
+                type="submit"
+                disabled={isUploading}
+                className="w-full sm:w-auto bg-orange-600 hover:bg-orange-700 text-white px-6 py-2 rounded-lg font-medium transition-colors disabled:opacity-50"
+              >
+                {isUploading ? (
+                  <span className="flex items-center">
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    Updating...
+                  </span>
+                ) : (
+                  'Update Easter Egg'
+                )}
+              </button>
             </div>
           </form>
         </div>
       </div>
       
-      {/* Delete Confirmation Dialog */}
-      <ConfirmDialog
-        isOpen={showDeleteConfirm}
-        onClose={() => setShowDeleteConfirm(false)}
-        onConfirm={() => onDelete && onDelete(egg.id)}
-        title="Delete Post"
-        message="Are you sure you want to delete this post? This action cannot be undone and will delete all comments and images."
-        confirmText="Delete Post"
-        type="danger"
-      />
     </div>
   )
 } 

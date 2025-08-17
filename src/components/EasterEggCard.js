@@ -101,8 +101,13 @@ export default function EasterEggCard({
                     <img
                       src={imageUrls[0]}
                       alt={egg.title}
-                      className="w-full max-h-80 object-cover rounded-2xl cursor-pointer hover:opacity-90 transition-opacity"
-                      onClick={() => openImageZoom(imageUrls[0])}
+                      className={`w-full max-h-80 object-cover rounded-2xl transition-opacity ${
+                        activeTab === 'home' ? '' : 'cursor-pointer hover:opacity-90'
+                      }`}
+                      onClick={activeTab === 'home' ? undefined : (e) => {
+                        e.stopPropagation()
+                        openImageZoom(imageUrls[0])
+                      }}
                     />
                   )
                 } else {
@@ -113,8 +118,13 @@ export default function EasterEggCard({
                           key={index}
                           src={imageUrl}
                           alt={`${egg.title} - Image ${index + 1}`}
-                          className="w-full h-40 object-cover rounded-2xl cursor-pointer hover:opacity-90 transition-opacity"
-                          onClick={() => openImageZoom(imageUrl)}
+                          className={`w-full h-40 object-cover rounded-2xl transition-opacity ${
+                            activeTab === 'home' ? '' : 'cursor-pointer hover:opacity-90'
+                          }`}
+                          onClick={activeTab === 'home' ? undefined : (e) => {
+                            e.stopPropagation()
+                            openImageZoom(imageUrl)
+                          }}
                         />
                       ))}
                     </div>
@@ -128,14 +138,18 @@ export default function EasterEggCard({
                   <img
                     src={imageUrls}
                     alt={egg.title}
-                    className="w-full max-h-80 object-cover rounded-2xl cursor-pointer hover:opacity-90 transition-opacity"
-                    onClick={() => openImageZoom(imageUrls)}
+                    className={`w-full max-h-80 object-cover rounded-2xl transition-opacity ${
+                      activeTab === 'home' ? '' : 'cursor-pointer hover:opacity-90'
+                    }`}
+                    onClick={activeTab === 'home' ? undefined : (e) => {
+                      e.stopPropagation()
+                      openImageZoom(imageUrls)
+                    }}
                   />
                 )
               }
               
               // Handle case where image_url might be malformed
-              console.warn('Unexpected image_url format:', imageUrls)
               return null
             })()}
           </div>

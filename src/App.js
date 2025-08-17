@@ -95,12 +95,14 @@ export default function App() {
   // Load Easter eggs from Supabase
   const loadEasterEggs = async () => {
     try {
+      console.log('Loading Easter eggs from database...')
       const { data: eggs, error } = await easterEggsService.getAllEasterEggs()
       
       if (error) {
         throw new Error('Failed to fetch Easter eggs')
       }
       
+      console.log('Loaded eggs:', eggs?.length || 0, 'eggs')
       setEasterEggs(eggs || [])
     } catch (error) {
       console.error("Error loading Easter eggs:", error)
@@ -169,26 +171,6 @@ export default function App() {
       }
     } catch (error) {
       console.error("Error adding comment:", error)
-    }
-  }
-
-  // Handle deleting a comment
-  const handleDeleteComment = async (commentId) => {
-    try {
-      const { error } = await commentsService.deleteComment(commentId)
-      
-      if (error) {
-        throw new Error('Failed to delete comment')
-      }
-
-      // Refresh comments
-      await loadComments(selectedEgg.id)
-      
-      // Show success message
-      alert('Comment deleted successfully')
-    } catch (error) {
-      console.error('Error deleting comment:', error)
-      alert('Failed to delete comment. Please try again.')
     }
   }
 
@@ -459,15 +441,23 @@ export default function App() {
           await deleteImagesFromStorage(existingImages)
         }
       } else {
-        // Keep existing images if no changes, but remove any deleted ones
+        // Handle individual image deletions
         const deletedImageUrls = updatedData.getAll('deleted_images')
         if (deletedImageUrls.length > 0) {
+          console.log('Deleting images:', deletedImageUrls)
           const existingImages = parseImageUrls(editingEgg.image_url)
-          eggData.image_url = existingImages.filter(img => !deletedImageUrls.includes(img))
+          console.log('Existing images:', existingImages)
+          const remainingImages = existingImages.filter(img => !deletedImageUrls.includes(img))
+          console.log('Remaining images:', remainingImages)
+          
+          // Update the database with remaining images
+          eggData.image_url = remainingImages.length > 0 ? remainingImages : null
+          console.log('Final image_url for database:', eggData.image_url)
           
           // Delete removed images from storage
           await deleteImagesFromStorage(deletedImageUrls)
         } else {
+          // No image changes
           eggData.image_url = editingEgg.image_url
         }
       }
@@ -482,11 +472,15 @@ export default function App() {
         eggData.video_url = editingEgg.video_url
       }
       
+      console.log('Updating egg with data:', eggData)
       const { error } = await easterEggsService.updateEasterEgg(eggId, eggData)
       
       if (error) {
+        console.error('Database update error:', error)
         throw new Error('Failed to update Easter egg')
       }
+      
+      console.log('Successfully updated egg in database')
 
       // Refresh the Easter eggs list
       await loadEasterEggs()
@@ -503,30 +497,47 @@ export default function App() {
   // Handle deleting an Easter egg
   const handleDeleteEgg = async (eggId) => {
     try {
+      console.log('Deleting egg with ID:', eggId)
+      
       // Import the parseImageUrls utility
       const { parseImageUrls } = await import('./utils/imageUtils.js')
       
       // Get the egg data first to delete associated images
       const eggToDelete = easterEggs.find(egg => egg.id === eggId)
+      console.log('Egg to delete:', eggToDelete)
+      
       if (eggToDelete && eggToDelete.image_url) {
         const imagesToDelete = parseImageUrls(eggToDelete.image_url)
+        console.log('Images to delete from storage:', imagesToDelete)
         await deleteImagesFromStorage(imagesToDelete)
       }
       
       // Delete the egg from the database
+      console.log('Deleting from database...')
       const { error } = await easterEggsService.deleteEasterEgg(eggId)
       
       if (error) {
+        console.error('Database deletion error:', error)
         throw new Error('Failed to delete Easter egg')
       }
 
-      // Refresh the Easter eggs list
-      await loadEasterEggs()
+      console.log('Successfully deleted from database')
       
-      // Close any open modals
+      // Close any open modals first
       setIsEditEggModalOpen(false)
       setEditingEgg(null)
       setSelectedEgg(null)
+      
+      // Force refresh the Easter eggs list
+      console.log('Refreshing Easter eggs list...')
+      await loadEasterEggs()
+      
+      // Also clear the selected egg if it was the deleted one
+      if (selectedEgg && selectedEgg.id === eggId) {
+        setSelectedEgg(null)
+      }
+      
+      console.log('Refresh complete')
       
       // Show success message
       alert('Post deleted successfully')
@@ -854,7 +865,7 @@ export default function App() {
             loading={loading}
             currentUser={user}
             onEditEgg={handleEditEgg}
-            onDeleteEgg={handleDeleteEgg}
+            
             activeTab={activeTab}
           />
         )}
@@ -878,7 +889,7 @@ export default function App() {
           currentUser={user}
           onReply={handleAddReply}
           onUpvote={handleCommentUpvote}
-          onDelete={handleDeleteComment}
+          
         />
       )}
 
@@ -895,7 +906,7 @@ export default function App() {
         isOpen={isEditEggModalOpen}
         onClose={() => setIsEditEggModalOpen(false)}
         onUpdate={handleUpdateEgg}
-        onDelete={handleDeleteEgg}
+        
         egg={editingEgg}
         user={user}
       />

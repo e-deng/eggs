@@ -148,15 +148,6 @@ export const easterEggsService = {
       .eq('id', id)
       .select()
     return { data, error }
-  },
-
-  // Delete easter egg
-  async deleteEasterEgg(id) {
-    const { error } = await supabase
-      .from('easter_eggs')
-      .delete()
-      .eq('id', id)
-    return { error }
   }
 }
 

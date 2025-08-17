@@ -1,14 +1,12 @@
 import React, { useState } from "react"
 import { HeartIcon, Reply } from "lucide-react"
 import UserAvatar from "./UserAvatar"
-import ConfirmDialog from "./ConfirmDialog"
 
 export default function Comment({ 
   comment, 
   currentUser, 
   onReply, 
   onUpvote,
-  onDelete,
   maxDepth = 3
 }) {
   // Use the calculated depth from the comment object, or default to 0
@@ -16,7 +14,6 @@ export default function Comment({
   const [showReplyForm, setShowReplyForm] = useState(false)
   const [replyText, setReplyText] = useState("")
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   
 
 
@@ -102,14 +99,6 @@ export default function Comment({
               }
             </p>
             
-            {/* Show reply indicator if this is a reply */}
-            {(comment.parent_comment_id || comment.temp_parent_id || 
-              (comment.content && comment.content.startsWith('[REPLY_TO:'))) && (
-              <div className="text-xs text-orange-500 mb-2">
-                ↳ Reply to comment
-              </div>
-            )}
-            
             {/* Action Buttons */}
             <div className="flex items-center space-x-4">
               {canReply && (
@@ -119,17 +108,6 @@ export default function Comment({
                 >
                   <Reply className="h-3 w-3" />
                   <span>Reply</span>
-                </button>
-              )}
-              
-              {/* Delete button for user's own comments */}
-              {currentUser && comment.user_id === currentUser.id && (
-                <button
-                  onClick={() => setShowDeleteConfirm(true)}
-                  className="flex items-center space-x-1 text-xs text-red-500 hover:text-red-600 transition-colors"
-                >
-                  🗑️
-                  <span>Delete</span>
                 </button>
               )}
             </div>
@@ -180,23 +158,12 @@ export default function Comment({
               currentUser={currentUser}
               onReply={onReply}
               onUpvote={onUpvote}
-              onDelete={onDelete}
               maxDepth={maxDepth}
             />
           ))}
         </div>
       )}
       
-      {/* Delete Confirmation Dialog */}
-      <ConfirmDialog
-        isOpen={showDeleteConfirm}
-        onClose={() => setShowDeleteConfirm(false)}
-        onConfirm={() => onDelete && onDelete(comment.id)}
-        title="Delete Comment"
-        message="Are you sure you want to delete this comment? This action cannot be undone and will delete all replies."
-        confirmText="Delete Comment"
-        type="danger"
-      />
     </div>
   )
 } 
