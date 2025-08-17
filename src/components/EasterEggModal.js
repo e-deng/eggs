@@ -1,7 +1,8 @@
-import React from "react"
+import React, { useState } from "react"
 import { HeartIcon, MessageCircle } from "lucide-react"
 import CommentsSection from "./CommentsSection"
 import UserAvatar from "./UserAvatar"
+import { parseImageUrls } from "../utils/imageUtils"
 
 export default function EasterEggModal({ 
   selectedEgg, 
@@ -17,6 +18,15 @@ export default function EasterEggModal({
   onReply,
   onUpvote
 }) {
+  const [zoomedImage, setZoomedImage] = useState(null)
+  
+  const openImageZoom = (imageUrl) => {
+    setZoomedImage(imageUrl)
+  }
+  
+  const closeImageZoom = () => {
+    setZoomedImage(null)
+  }
   if (!selectedEgg) return null
 
   return (
@@ -60,14 +70,59 @@ export default function EasterEggModal({
               <p className="text-gray-700 text-base leading-relaxed">{selectedEgg.description}</p>
             </div>
 
-            {/* Image or Video */}
+            {/* Images or Video */}
             {selectedEgg.image_url && (
               <div className="mb-4">
-                <img
-                  src={selectedEgg.image_url}
-                  alt={selectedEgg.title}
-                  className="w-full max-h-96 object-cover rounded-2xl"
-                />
+                {(() => {
+                  console.log('Modal - selectedEgg.image_url:', selectedEgg.image_url, 'type:', typeof selectedEgg.image_url)
+                  
+                  // Use utility function to parse image URLs
+                  const imageUrls = parseImageUrls(selectedEgg.image_url)
+                  
+                  // Handle array of image URLs
+                  if (Array.isArray(imageUrls)) {
+                    if (imageUrls.length === 1) {
+                      return (
+                        <img
+                          src={imageUrls[0]}
+                          alt={selectedEgg.title}
+                          className="w-full max-h-96 object-cover rounded-2xl cursor-pointer hover:opacity-90 transition-opacity"
+                          onClick={() => openImageZoom(imageUrls[0])}
+                        />
+                      )
+                    } else {
+                      return (
+                        <div className="grid grid-cols-2 gap-2">
+                          {imageUrls.map((imageUrl, index) => (
+                            <img
+                              key={index}
+                              src={imageUrl}
+                              alt={`${selectedEgg.title} - Image ${index + 1}`}
+                              className="w-full h-48 object-cover rounded-2xl cursor-pointer hover:opacity-90 transition-opacity"
+                              onClick={() => openImageZoom(imageUrl)}
+                            />
+                          ))}
+                        </div>
+                      )
+                    }
+                  }
+                  
+                  // Handle string (backward compatibility)
+                  if (typeof imageUrls === 'string') {
+                    return (
+                      <img
+                        src={imageUrls}
+                        alt={selectedEgg.title}
+                        className="w-full max-h-96 object-cover rounded-2xl cursor-pointer hover:opacity-90 transition-opacity"
+                        onClick={() => openImageZoom(imageUrls)}
+                      />
+                    )
+                  }
+                  
+                  // Handle case where image_url might be malformed
+                  console.warn('Modal - Unexpected image_url format:', imageUrls)
+                  return null
+                })()}
               </div>
             )}
             
@@ -132,6 +187,29 @@ export default function EasterEggModal({
           </div>
         </div>
       </div>
+      
+      {/* Image Zoom Modal */}
+      {zoomedImage && (
+        <div 
+          className="fixed inset-0 bg-black/90 flex items-center justify-center z-50 p-4"
+          onClick={closeImageZoom}
+        >
+          <div className="relative max-w-full max-h-full">
+            <img
+              src={zoomedImage}
+              alt="Zoomed image"
+              className="max-w-full max-h-full object-contain"
+              onClick={(e) => e.stopPropagation()}
+            />
+            <button
+              onClick={closeImageZoom}
+              className="absolute top-4 right-4 bg-white/20 hover:bg-white/30 text-white p-2 rounded-full transition-colors"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 } 

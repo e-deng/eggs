@@ -15,6 +15,7 @@ import MobileUserProfile from "./components/MobileUserProfile"
 import { easterEggsService, commentsService, likesService, commentLikesService } from "./services/supabaseService"
 import { authService } from "./services/supabaseService"
 import { getAlbumColors } from "./utils/albumColors"
+import { supabase } from "./supabaseClient"
 
 
 export default function App() {
@@ -284,9 +285,129 @@ export default function App() {
     setIsEditEggModalOpen(true)
   }
 
+  // Helper function to delete images from storage
+  const deleteImagesFromStorage = async (imageUrls) => {
+    if (!imageUrls || imageUrls.length === 0) return
+    
+    console.log('Deleting images from storage:', imageUrls)
+    
+    for (const imageUrl of imageUrls) {
+      try {
+        // Extract the file path from the URL
+        // URL format: https://.../storage/v1/object/public/easter-egg-images/filename.png
+        const urlParts = imageUrl.split('/')
+        const filename = urlParts[urlParts.length - 1]
+        
+        if (filename) {
+          const { error } = await supabase.storage
+            .from('easter-egg-images')
+            .remove([filename])
+          
+          if (error) {
+            console.error('Failed to delete image from storage:', filename, error)
+          } else {
+            console.log('Successfully deleted image from storage:', filename)
+          }
+        }
+      } catch (error) {
+        console.error('Error deleting image from storage:', imageUrl, error)
+      }
+    }
+  }
+
   // Handle updating an Easter egg
   const handleUpdateEgg = async (eggId, updatedData) => {
     try {
+      // Handle new image uploads if provided
+      let imageUrls = []
+      const imageFiles = updatedData.getAll('images')
+      if (imageFiles.length > 0) {
+        for (const imageFile of imageFiles) {
+          try {
+            const imagePath = `${Date.now()}-${imageFile.name}`
+            
+            // Upload to Supabase storage
+            const { data: uploadData, error: uploadError } = await supabase.storage
+              .from('easter-egg-images')
+              .upload(imagePath, imageFile)
+
+            if (uploadError) {
+              console.error('Image upload error:', uploadError)
+              // Check if it's a bucket not found error
+              if (uploadError.message.includes('Bucket not found') || uploadError.message.includes('bucket')) {
+                throw new Error('BUCKET_NOT_FOUND')
+              }
+              throw new Error('Failed to upload image. Please try again.')
+            }
+
+            // Get public URL
+            const { data: { publicUrl } } = supabase.storage
+              .from('easter-egg-images')
+              .getPublicUrl(imagePath)
+          
+            imageUrls.push(publicUrl)
+          } catch (error) {
+            if (error.message.includes('BUCKET_NOT_FOUND') || error.message.includes('bucket') || error.message.includes('not found')) {
+              console.warn('Storage bucket not available, using data URL fallback')
+              // Fallback: convert image to data URL and store in database
+              const reader = new FileReader()
+              const imageDataUrl = await new Promise((resolve, reject) => {
+                reader.onload = () => resolve(reader.result)
+                reader.onerror = reject
+                reader.readAsDataURL(imageFile)
+              })
+              imageUrls.push(imageDataUrl)
+            } else {
+              throw error
+            }
+          }
+        }
+      }
+
+      // Handle new video upload if provided
+      let videoUrl = null
+      if (updatedData.get('video')) {
+        const videoFile = updatedData.get('video')
+        try {
+          const videoPath = `${Date.now()}-${videoFile.name}`
+          
+          // Upload to Supabase storage
+          const { data: uploadData, error: uploadError } = await supabase.storage
+            .from('easter-egg-videos')
+            .upload(videoPath, videoFile)
+
+          if (uploadError) {
+            console.error('Video upload error:', uploadError)
+            // Check if it's a bucket not found error
+            if (uploadError.message.includes('Bucket not found') || uploadError.message.includes('bucket')) {
+              throw new Error('BUCKET_NOT_FOUND')
+            }
+            throw new Error('Failed to upload video. Please try again.')
+          }
+
+          // Get public URL
+          const { data: { publicUrl } } = supabase.storage
+            .from('easter-egg-videos')
+            .getPublicUrl(videoPath)
+        
+          videoUrl = publicUrl
+        } catch (error) {
+          if (error.message.includes('BUCKET_NOT_FOUND') || error.message.includes('bucket') || error.message.includes('not found')) {
+            console.warn('Storage bucket not available, using data URL fallback')
+            // Fallback: convert video to data URL and store in database
+            const reader = new FileReader()
+            const videoDataUrl = await new Promise((resolve, reject) => {
+              reader.onload = () => resolve(reader.result)
+              reader.onerror = reject
+              reader.readAsDataURL(videoFile)
+            })
+            videoUrl = videoDataUrl
+          } else {
+            throw error
+          }
+        }
+      }
+
       // Convert FormData to regular object for Supabase
       const eggData = {
         title: updatedData.get('title'),
@@ -296,14 +417,61 @@ export default function App() {
         clue_type: updatedData.get('clue_type') || null
       }
       
-      // Handle image removal
-      if (updatedData.get('remove_image') === 'true') {
+      console.log('Updating egg with image_url:', eggData.image_url)
+      
+      // Import the parseImageUrls utility
+      const { parseImageUrls } = await import('./utils/imageUtils.js')
+      
+      console.log('Update debug - editingEgg.image_url:', editingEgg.image_url)
+      console.log('Update debug - deleted_images:', updatedData.getAll('deleted_images'))
+      
+      // Handle image changes
+      if (imageUrls.length > 0) {
+        // Parse existing images properly
+        const existingImages = parseImageUrls(editingEgg.image_url)
+        console.log('Update debug - parsed existing images:', existingImages)
+        
+        // Remove deleted images from remaining images
+        const deletedImageUrls = updatedData.getAll('deleted_images')
+        const finalImages = existingImages.filter(img => !deletedImageUrls.includes(img))
+        console.log('Update debug - final images after filtering:', finalImages)
+        
+        // Add new images
+        eggData.image_url = [...finalImages, ...imageUrls]
+        
+        // Delete removed images from storage
+        await deleteImagesFromStorage(deletedImageUrls)
+      } else if (updatedData.get('remove_images') === 'true') {
         eggData.image_url = null
+        // Delete all existing images from storage
+        if (editingEgg.image_url) {
+          const existingImages = parseImageUrls(editingEgg.image_url)
+          await deleteImagesFromStorage(existingImages)
+        }
+      } else {
+        // Keep existing images if no changes, but remove any deleted ones
+        const deletedImageUrls = updatedData.getAll('deleted_images')
+        if (deletedImageUrls.length > 0) {
+          const existingImages = parseImageUrls(editingEgg.image_url)
+          console.log('Update debug - parsed existing images for deletion:', existingImages)
+          eggData.image_url = existingImages.filter(img => !deletedImageUrls.includes(img))
+          console.log('Update debug - final image_url after deletion:', eggData.image_url)
+          
+          // Delete removed images from storage
+          await deleteImagesFromStorage(deletedImageUrls)
+        } else {
+          eggData.image_url = editingEgg.image_url
+        }
       }
       
-      // Handle video removal
-      if (updatedData.get('remove_video') === 'true') {
+      // Handle video changes
+      if (videoUrl) {
+        eggData.video_url = videoUrl
+      } else if (updatedData.get('remove_video') === 'true') {
         eggData.video_url = null
+      } else {
+        // Keep existing video if no changes
+        eggData.video_url = editingEgg.video_url
       }
       
       const { error } = await easterEggsService.updateEasterEgg(eggId, eggData)
@@ -333,6 +501,96 @@ export default function App() {
     }
 
     try {
+            // Handle image uploads if provided
+      let imageUrls = []
+      const imageFiles = newEgg.getAll('images')
+      if (imageFiles.length > 0) {
+        for (const imageFile of imageFiles) {
+          try {
+            const imagePath = `${Date.now()}-${imageFile.name}`
+            
+            // Upload to Supabase storage
+            const { data: uploadData, error: uploadError } = await supabase.storage
+              .from('easter-egg-images')
+              .upload(imagePath, imageFile)
+
+            if (uploadError) {
+              console.error('Image upload error:', uploadError)
+              // Check if it's a bucket not found error
+              if (uploadError.message.includes('Bucket not found') || uploadError.message.includes('bucket')) {
+                throw new Error('BUCKET_NOT_FOUND')
+              }
+              throw new Error('Failed to upload image. Please try again.')
+            }
+
+            // Get public URL
+            const { data: { publicUrl } } = supabase.storage
+              .from('easter-egg-images')
+              .getPublicUrl(imagePath)
+          
+            imageUrls.push(publicUrl)
+          } catch (error) {
+            if (error.message.includes('BUCKET_NOT_FOUND') || error.message.includes('bucket') || error.message.includes('not found')) {
+              console.warn('Storage bucket not available, using data URL fallback')
+              // Fallback: convert image to data URL and store in database
+              const reader = new FileReader()
+              const imageDataUrl = await new Promise((resolve, reject) => {
+                reader.onload = () => resolve(reader.result)
+                reader.onerror = reject
+                reader.readAsDataURL(imageFile)
+              })
+              imageUrls.push(imageDataUrl)
+            } else {
+              throw error
+            }
+          }
+        }
+      }
+
+      // Handle video upload if provided
+      let videoUrl = null
+      if (newEgg.get('video')) {
+        const videoFile = newEgg.get('video')
+        try {
+          const videoPath = `${Date.now()}-${videoFile.name}`
+          
+          // Upload to Supabase storage
+          const { data: uploadData, error: uploadError } = await supabase.storage
+            .from('easter-egg-videos')
+            .upload(videoPath, videoFile)
+
+          if (uploadError) {
+            console.error('Video upload error:', uploadError)
+            // Check if it's a bucket not found error
+            if (uploadError.message.includes('Bucket not found') || uploadError.message.includes('bucket')) {
+              throw new Error('BUCKET_NOT_FOUND')
+            }
+            throw new Error('Failed to upload video. Please try again.')
+          }
+
+          // Get public URL
+          const { data: { publicUrl } } = supabase.storage
+            .from('easter-egg-videos')
+            .getPublicUrl(videoPath)
+          
+          videoUrl = publicUrl
+        } catch (error) {
+          if (error.message.includes('BUCKET_NOT_FOUND') || error.message.includes('bucket') || error.message.includes('not found')) {
+            console.warn('Storage bucket not available, using data URL fallback')
+            // Fallback: convert video to data URL and store in database
+            const reader = new FileReader()
+            const videoDataUrl = await new Promise((resolve, reject) => {
+              reader.onload = () => resolve(reader.result)
+              reader.onerror = reject
+              reader.readAsDataURL(videoFile)
+            })
+            videoUrl = videoDataUrl
+          } else {
+            throw error
+          }
+        }
+      }
+
       // Convert FormData to regular object for Supabase
       const eggData = {
         title: newEgg.get('title'),
@@ -341,8 +599,12 @@ export default function App() {
         media_type: newEgg.get('media_type'),
         clue_type: newEgg.get('clue_type'),
         user_id: user.id,
-        username: user.username // Add username to the egg data
+        username: user.username,
+        image_url: imageUrls.length > 0 ? imageUrls : null,
+        video_url: videoUrl
       }
+      
+      console.log('Uploading egg with image_url:', eggData.image_url)
 
       const { data: addedEgg, error } = await easterEggsService.createEasterEgg(eggData)
       
@@ -356,6 +618,7 @@ export default function App() {
       }
     } catch (error) {
       console.error("Error adding egg:", error)
+      throw error
     }
   }
 

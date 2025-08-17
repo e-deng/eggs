@@ -1,6 +1,7 @@
-import React from "react"
+import React, { useState } from "react"
 import { HeartIcon, MessageCircle } from "lucide-react"
 import UserAvatar from "./UserAvatar"
+import { parseImageUrls } from "../utils/imageUtils"
 
 export default function EasterEggCard({ 
   egg, 
@@ -12,6 +13,16 @@ export default function EasterEggCard({
   onEditEgg,
   activeTab
 }) {
+  const [zoomedImage, setZoomedImage] = useState(null)
+  
+  const openImageZoom = (imageUrl) => {
+    setZoomedImage(imageUrl)
+  }
+  
+  const closeImageZoom = () => {
+    setZoomedImage(null)
+  }
+  
   return (
     <div
       onClick={() => onEggClick(egg)}
@@ -75,14 +86,59 @@ export default function EasterEggCard({
           <p className="text-gray-700 text-sm leading-relaxed">{egg.description}</p>
         </div>
 
-        {/* Image or Video */}
+        {/* Images or Video */}
         {egg.image_url && (
           <div className="mb-3">
-            <img
-              src={egg.image_url}
-              alt={egg.title}
-              className="w-full max-h-80 object-cover rounded-2xl"
-            />
+            {(() => {
+              console.log('egg.image_url:', egg.image_url, 'type:', typeof egg.image_url)
+              
+              // Use utility function to parse image URLs
+              const imageUrls = parseImageUrls(egg.image_url)
+              
+              // Handle array of image URLs
+              if (Array.isArray(imageUrls)) {
+                if (imageUrls.length === 1) {
+                  return (
+                    <img
+                      src={imageUrls[0]}
+                      alt={egg.title}
+                      className="w-full max-h-80 object-cover rounded-2xl cursor-pointer hover:opacity-90 transition-opacity"
+                      onClick={() => openImageZoom(imageUrls[0])}
+                    />
+                  )
+                } else {
+                  return (
+                    <div className="grid grid-cols-2 gap-2">
+                      {imageUrls.map((imageUrl, index) => (
+                        <img
+                          key={index}
+                          src={imageUrl}
+                          alt={`${egg.title} - Image ${index + 1}`}
+                          className="w-full h-40 object-cover rounded-2xl cursor-pointer hover:opacity-90 transition-opacity"
+                          onClick={() => openImageZoom(imageUrl)}
+                        />
+                      ))}
+                    </div>
+                  )
+                }
+              }
+              
+              // Handle string (backward compatibility)
+              if (typeof imageUrls === 'string') {
+                return (
+                  <img
+                    src={imageUrls}
+                    alt={egg.title}
+                    className="w-full max-h-80 object-cover rounded-2xl cursor-pointer hover:opacity-90 transition-opacity"
+                    onClick={() => openImageZoom(imageUrls)}
+                  />
+                )
+              }
+              
+              // Handle case where image_url might be malformed
+              console.warn('Unexpected image_url format:', imageUrls)
+              return null
+            })()}
           </div>
         )}
         
@@ -143,6 +199,29 @@ export default function EasterEggCard({
           </div>
         </div>
       </div>
+      
+      {/* Image Zoom Modal */}
+      {zoomedImage && (
+        <div 
+          className="fixed inset-0 bg-black/90 flex items-center justify-center z-50 p-4"
+          onClick={closeImageZoom}
+        >
+          <div className="relative max-w-full max-h-full">
+            <img
+              src={zoomedImage}
+              alt="Zoomed image"
+              className="max-w-full max-h-full object-contain"
+              onClick={(e) => e.stopPropagation()}
+            />
+            <button
+              onClick={closeImageZoom}
+              className="absolute top-4 right-4 bg-white/20 hover:bg-white/30 text-white p-2 rounded-full transition-colors"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 } 

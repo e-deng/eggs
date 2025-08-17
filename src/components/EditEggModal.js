@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react"
-import { X, Upload } from "lucide-react"
+import { X } from "lucide-react"
+import { parseImageUrls } from "../utils/imageUtils"
 
 export default function EditEggModal({ isOpen, onClose, egg, onUpdate, user }) {
   const [formData, setFormData] = useState({
@@ -10,13 +11,10 @@ export default function EditEggModal({ isOpen, onClose, egg, onUpdate, user }) {
     clue_type: ""
   })
   
-  const [selectedImage, setSelectedImage] = useState(null)
-  const [imagePreview, setImagePreview] = useState(null)
-  const [selectedVideo, setSelectedVideo] = useState(null)
-  const [videoPreview, setVideoPreview] = useState(null)
+  const [imagePreviews, setImagePreviews] = useState([])
   const [isUploading, setIsUploading] = useState(false)
-  const [removeCurrentImage, setRemoveCurrentImage] = useState(false)
-  const [removeCurrentVideo, setRemoveCurrentVideo] = useState(false)
+  const [removeCurrentImages, setRemoveCurrentImages] = useState(false)
+  const [deletedImageUrls, setDeletedImageUrls] = useState([])
 
   const albums = ["Taylor Swift", "Fearless", "Speak Now", "Red", "1989", "Reputation", "Lover", "Folklore", "Evermore", "Midnights", "TTPD", "The Life of a Showgirl"]
   const mediaTypes = ["Album Art", "Music Video", "Music", "Performance", "Interview", "Social Media", "Other"]
@@ -32,55 +30,18 @@ export default function EditEggModal({ isOpen, onClose, egg, onUpdate, user }) {
         media_type: egg.media_type || "",
         clue_type: egg.clue_type || ""
       })
-      setImagePreview(egg.image_url || null)
-      setVideoPreview(egg.video_url || null)
-      setRemoveCurrentImage(false)
-      setRemoveCurrentVideo(false)
+      
+      // Use utility function to parse image URLs
+      const currentImages = parseImageUrls(egg.image_url)
+      console.log('EditModal - Parsed image URLs:', currentImages)
+      setImagePreviews(currentImages)
+      setRemoveCurrentImages(false)
     }
   }, [egg])
 
-  const handleImageChange = (e) => {
-    const file = e.target.files[0]
-    if (file) {
-      if (file.size > 5 * 1024 * 1024) {
-        alert('File size must be less than 5MB')
-        return
-      }
-      
-      setSelectedImage(file)
-      setRemoveCurrentImage(false)
-      
-      const reader = new FileReader()
-      reader.onload = (e) => {
-        setImagePreview(e.target.result)
-      }
-      reader.readAsDataURL(file)
-    }
-  }
 
-  const handleVideoChange = (e) => {
-    const file = e.target.files[0]
-    if (file) {
-      if (file.size > 100 * 1024 * 1024) {
-        alert('Video file size must be less than 100MB')
-        return
-      }
-      
-      if (!file.type.startsWith('video/')) {
-        alert('Please upload a video file')
-        return
-      }
-      
-      setSelectedVideo(file)
-      setRemoveCurrentVideo(false)
-      
-      const reader = new FileReader()
-      reader.onload = (e) => {
-        setVideoPreview(e.target.result)
-      }
-      reader.readAsDataURL(file)
-    }
-  }
+
+
 
   const handleChange = (e) => {
     const { name, value } = e.target
@@ -115,28 +76,23 @@ export default function EditEggModal({ isOpen, onClose, egg, onUpdate, user }) {
       if (formData.media_type) formDataToSend.append('media_type', formData.media_type)
       if (formData.clue_type) formDataToSend.append('clue_type', formData.clue_type)
       
-      // Handle image changes
-      if (selectedImage) {
-        formDataToSend.append('image', selectedImage)
-      } else if (removeCurrentImage) {
-        formDataToSend.append('remove_image', 'true')
+      // Handle image deletions only
+      if (deletedImageUrls.length > 0) {
+        deletedImageUrls.forEach(imageUrl => {
+          formDataToSend.append('deleted_images', imageUrl)
+        })
       }
       
-      // Handle video changes
-      if (selectedVideo) {
-        formDataToSend.append('video', selectedVideo)
-      } else if (removeCurrentVideo) {
-        formDataToSend.append('remove_video', 'true')
+      if (removeCurrentImages) {
+        formDataToSend.append('remove_images', 'true')
       }
       
       // Call the update function
       await onUpdate(egg.id, formDataToSend)
       
       // Reset form
-      setSelectedImage(null)
-      setSelectedVideo(null)
-      setRemoveCurrentImage(false)
-      setRemoveCurrentVideo(false)
+      setRemoveCurrentImages(false)
+      setDeletedImageUrls([])
       
       onClose()
     } catch (error) {
@@ -147,27 +103,32 @@ export default function EditEggModal({ isOpen, onClose, egg, onUpdate, user }) {
     }
   }
 
-  const removeImage = () => {
-    if (egg.image_url && !selectedImage) {
-      setRemoveCurrentImage(true)
-      setImagePreview(null)
-    } else {
-      setSelectedImage(null)
-      setImagePreview(null)
-      setRemoveCurrentImage(false)
+  const removeIndividualImage = (index) => {
+    const imageToRemove = imagePreviews[index]
+    console.log('Removing individual image:', imageToRemove, 'at index:', index)
+    
+    // Add to deleted images list for backend cleanup
+    setDeletedImageUrls(prev => [...prev, imageToRemove])
+    
+    // Remove from current previews
+    setImagePreviews(prev => prev.filter((_, i) => i !== index))
+    
+    // If this was the last image, mark for complete removal
+    if (imagePreviews.length === 1) {
+      setRemoveCurrentImages(true)
     }
   }
 
-  const removeVideo = () => {
-    if (egg.video_url && !selectedVideo) {
-      setRemoveCurrentVideo(true)
-      setVideoPreview(null)
-    } else {
-      setSelectedVideo(null)
-      setVideoPreview(null)
-      setRemoveCurrentVideo(false)
+  const removeImage = () => {
+    if (egg.image_url) {
+      setRemoveCurrentImages(true)
+      setImagePreviews([])
+      // Mark all current images for deletion
+      setDeletedImageUrls(imagePreviews)
     }
   }
+
+
 
   if (!isOpen || !egg) return null
 
@@ -282,95 +243,81 @@ export default function EditEggModal({ isOpen, onClose, egg, onUpdate, user }) {
             {/* Image Section */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Easter Egg Image
+                Easter Egg Images
               </label>
               
-              {imagePreview ? (
-                <div className="relative">
-                  {/* eslint-disable-next-line jsx-a11y/img-redundant-alt */}
-                  <img
-                    src={imagePreview}
-                    alt="Current image"
-                    className="w-full h-48 object-cover rounded-lg border border-gray-200"
-                  />
-                  <button
-                    type="button"
-                    onClick={removeImage}
-                    className="absolute top-2 right-2 bg-red-500 text-white p-2 rounded-full hover:bg-red-600 transition-colors"
-                  >
-                    <X className="h-4 w-4" />
-                  </button>
-                </div>
-              ) : (
-                <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-orange-400 transition-colors">
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleImageChange}
-                    className="hidden"
-                    id="edit-image-upload"
-                  />
-                  <label htmlFor="edit-image-upload" className="cursor-pointer">
-                    <Upload className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                    <p className="text-gray-600 mb-2">
-                      <span className="font-medium text-orange-600 hover:text-orange-500">
-                        Click to upload
-                      </span>{" "}
-                      or drag and drop
-                    </p>
-                    <p className="text-sm text-gray-500">
-                      PNG, JPG, GIF up to 5MB
-                    </p>
-                  </label>
-                </div>
-              )}
+              {/* Current Images */}
+              {(() => {
+                if (imagePreviews.length > 0) {
+                  return (
+                    <div className="mb-4">
+                      <p className="text-sm text-gray-600 mb-2">Current images ({imagePreviews.length}):</p>
+                      <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                        {imagePreviews.map((image, index) => (
+                          <div key={index} className="relative">
+                            <img
+                              src={image}
+                              alt={`Current image ${index + 1}`}
+                              className="w-full h-24 object-cover rounded-lg border border-gray-200"
+                              onError={(e) => console.error(`Failed to load image ${index}:`, image, e)}
+                              onLoad={() => console.log(`Successfully loaded image ${index}:`, image)}
+                            />
+                            <button
+                              type="button"
+                              onClick={() => removeIndividualImage(index)}
+                              className="absolute top-1 right-1 bg-red-500 text-white p-1 rounded-full hover:bg-red-600 transition-colors"
+                              title="Remove this image"
+                            >
+                              <X className="h-3 w-3" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={removeImage}
+                        className="mt-2 text-red-600 hover:text-red-700 text-sm font-medium"
+                      >
+                        Remove all current images
+                      </button>
+                    </div>
+                  )
+                } else {
+                  return (
+                    <div className="mb-4">
+                      <p className="text-sm text-gray-500">No current images</p>
+                    </div>
+                  )
+                }
+              })()}
+              
+              {/* Note: Images can only be removed in edit mode, not added */}
+              <div className="text-sm text-gray-500 text-center py-2">
+                💡 Images can only be removed in edit mode. To add new images, create a new post.
+              </div>
             </div>
 
-            {/* Video Section */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Video
-              </label>
-              
-              {videoPreview ? (
+            {/* Video Section - Read Only */}
+            {egg.video_url && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Video (Read Only)
+                </label>
                 <div className="relative">
                   <video
-                    src={videoPreview}
+                    src={egg.video_url}
                     controls
                     className="w-full h-48 object-cover rounded-lg border border-gray-200"
                   />
-                  <button
-                    type="button"
-                    onClick={removeVideo}
-                    className="absolute top-2 right-2 bg-red-500 text-white p-2 rounded-full hover:bg-red-600 transition-colors"
-                  >
-                    <X className="h-4 w-4" />
-                  </button>
+                  <div className="absolute top-2 right-2 bg-gray-800 text-white px-2 py-1 rounded text-xs">
+                    Read Only
+                  </div>
                 </div>
-              ) : (
-                <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-orange-400 transition-colors">
-                  <input
-                    type="file"
-                    accept="video/*"
-                    onChange={handleVideoChange}
-                    className="hidden"
-                    id="edit-video-upload"
-                  />
-                  <label htmlFor="edit-video-upload" className="cursor-pointer">
-                    <Upload className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                    <p className="text-gray-600 mb-2">
-                      <span className="font-medium text-orange-600 hover:text-orange-500">
-                        Click to upload
-                      </span>{" "}
-                      or drag and drop
-                    </p>
-                    <p className="text-sm text-gray-500">
-                      MP4, MOV, AVI up to 100MB
-                    </p>
-                  </label>
-                </div>
-              )}
-            </div>
+                <p className="text-sm text-gray-500 mt-2">
+                  💡 Videos cannot be modified in edit mode. Create a new post to change videos.
+                </p>
+              </div>
+            )}
 
             {/* Submit Button */}
             <div className="flex justify-end gap-3 pt-4">

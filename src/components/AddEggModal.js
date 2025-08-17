@@ -11,8 +11,8 @@ export default function AddEggModal({ isOpen, onClose, onAdd, user }) {
     image_url: "",
     video_url: ""
   })
-  const [selectedImage, setSelectedImage] = useState(null)
-  const [imagePreview, setImagePreview] = useState(null)
+  const [selectedImages, setSelectedImages] = useState([])
+  const [imagePreviews, setImagePreviews] = useState([])
   const [selectedVideo, setSelectedVideo] = useState(null)
   const [videoPreview, setVideoPreview] = useState(null)
   const [isUploading, setIsUploading] = useState(false)
@@ -24,22 +24,35 @@ export default function AddEggModal({ isOpen, onClose, onAdd, user }) {
 
 
   const handleImageChange = (e) => {
-    const file = e.target.files[0]
-    if (file) {
-      // Check file size (5MB limit)
+    const files = Array.from(e.target.files)
+    const validFiles = files.filter(file => {
       if (file.size > 5 * 1024 * 1024) {
-        alert('File size must be less than 5MB')
-        return
+        alert(`File ${file.name} is too large. Must be less than 5MB`)
+        return false
       }
-      
-      setSelectedImage(file)
-      
-      // Create preview
-      const reader = new FileReader()
-      reader.onload = (e) => {
-        setImagePreview(e.target.result)
+      if (!file.type.startsWith('image/')) {
+        alert(`File ${file.name} is not an image`)
+        return false
       }
-      reader.readAsDataURL(file)
+      return true
+    })
+    
+    if (validFiles.length > 0) {
+      // Append new files to existing selection instead of replacing
+      setSelectedImages(prev => [...prev, ...validFiles])
+      
+      // Create previews for all selected images
+      const newPreviews = []
+      validFiles.forEach(file => {
+        const reader = new FileReader()
+        reader.onload = (e) => {
+          newPreviews.push(e.target.result)
+          if (newPreviews.length === validFiles.length) {
+            setImagePreviews(prev => [...prev, ...newPreviews])
+          }
+        }
+        reader.readAsDataURL(file)
+      })
     }
   }
 
@@ -83,30 +96,34 @@ export default function AddEggModal({ isOpen, onClose, onAdd, user }) {
     e.preventDefault()
     e.currentTarget.classList.remove('border-orange-400', 'bg-orange-50')
     
-    const files = e.dataTransfer.files
-    if (files.length > 0) {
-      const file = files[0]
-      
-      // Check file type
+    const files = Array.from(e.dataTransfer.files)
+    const validFiles = files.filter(file => {
       if (!file.type.startsWith('image/')) {
-        alert('Please upload an image file')
-        return
+        alert(`File ${file.name} is not an image`)
+        return false
       }
-      
-      // Check file size (5MB limit)
       if (file.size > 5 * 1024 * 1024) {
-        alert('File size must be less than 5MB')
-        return
+        alert(`File ${file.name} is too large. Must be less than 5MB`)
+        return false
       }
+      return true
+    })
+    
+    if (validFiles.length > 0) {
+      setSelectedImages(validFiles)
       
-      setSelectedImage(file)
-      
-      // Create preview
-      const reader = new FileReader()
-      reader.onload = (e) => {
-        setImagePreview(e.target.result)
-      }
-      reader.readAsDataURL(file)
+      // Create previews for all dropped images
+      const newPreviews = []
+      validFiles.forEach(file => {
+        const reader = new FileReader()
+        reader.onload = (e) => {
+          newPreviews.push(e.target.result)
+          if (newPreviews.length === validFiles.length) {
+            setImagePreviews(newPreviews)
+          }
+        }
+        reader.readAsDataURL(file)
+      })
     }
   }
 
@@ -167,9 +184,11 @@ export default function AddEggModal({ isOpen, onClose, onAdd, user }) {
         }
       })
       
-      // Add image file if selected
-      if (selectedImage) {
-        formDataToSend.append('image', selectedImage)
+      // Add image files if selected
+      if (selectedImages.length > 0) {
+        selectedImages.forEach(image => {
+          formDataToSend.append('images', image)
+        })
       }
       
       // Add video file if selected
@@ -185,7 +204,7 @@ export default function AddEggModal({ isOpen, onClose, onAdd, user }) {
 
       
       // Add empty strings for optional media fields if not provided
-      if (!selectedImage) {
+      if (selectedImages.length === 0) {
         formDataToSend.append('image_url', '')
       }
       if (!selectedVideo) {
@@ -206,8 +225,8 @@ export default function AddEggModal({ isOpen, onClose, onAdd, user }) {
         video_url: "",
 
       })
-      setSelectedImage(null)
-      setImagePreview(null)
+      setSelectedImages([])
+      setImagePreviews([])
       setSelectedVideo(null)
       setVideoPreview(null)
       onClose()
@@ -227,8 +246,8 @@ export default function AddEggModal({ isOpen, onClose, onAdd, user }) {
   }
 
   const removeImage = () => {
-    setSelectedImage(null)
-    setImagePreview(null)
+    setSelectedImages([])
+    setImagePreviews([])
   }
 
   const removeVideo = () => {
@@ -362,50 +381,63 @@ export default function AddEggModal({ isOpen, onClose, onAdd, user }) {
           {/* Image Upload Section */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Easter Egg Image (Optional)
+              Easter Egg Images (Optional)
             </label>
             
-            {!imagePreview ? (
-              <div 
-                className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-orange-400 transition-colors"
-                onDragOver={handleDragOver}
-                onDragLeave={handleDragLeave}
-                onDrop={handleDrop}
-              >
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleImageChange}
-                  className="hidden"
-                  id="image-upload"
-                />
-                <label htmlFor="image-upload" className="cursor-pointer">
-                  <Upload className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                  <p className="text-gray-600 mb-2">
-                    <span className="font-medium text-orange-600 hover:text-orange-500">
-                      Click to upload
-                    </span>{" "}
-                    or drag and drop
-                  </p>
-                  <p className="text-sm text-gray-500">
-                    PNG, JPG, GIF up to 5MB (Optional)
-                  </p>
-                </label>
-              </div>
-            ) : (
-              <div className="relative">
-                <img
-                  src={imagePreview}
-                  alt="Preview"
-                  className="w-full h-48 object-cover rounded-lg border border-gray-200"
-                />
-                <button
-                  type="button"
-                  onClick={removeImage}
-                  className="absolute top-2 right-2 bg-red-500 text-white p-2 rounded-full hover:bg-red-600 transition-colors"
-                >
-                  <X className="h-4 w-4" />
-                </button>
+            {/* Image Upload Area */}
+            <div 
+              className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-orange-400 transition-colors"
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
+            >
+              <input
+                type="file"
+                accept="image/*"
+                multiple
+                onChange={handleImageChange}
+                className="hidden"
+                id="image-upload"
+              />
+              <label htmlFor="image-upload" className="cursor-pointer">
+                <Upload className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                <p className="text-gray-600 mb-2">
+                  <span className="font-medium text-orange-600 hover:text-orange-500">
+                    Click to upload
+                  </span>{" "}
+                  or drag and drop
+                </p>
+                <p className="text-sm text-gray-500">
+                  PNG, JPG, GIF up to 5MB (Multiple images supported)
+                </p>
+              </label>
+            </div>
+            
+            {/* Selected Images Preview */}
+            {imagePreviews.length > 0 && (
+              <div className="mt-4">
+                <p className="text-sm text-gray-600 mb-2">Selected images:</p>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                  {imagePreviews.map((preview, index) => (
+                    <div key={index} className="relative">
+                      <img
+                        src={preview}
+                        alt={`Image ${index + 1}`}
+                        className="w-full h-24 object-cover rounded-lg border border-gray-200"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedImages(prev => prev.filter((_, i) => i !== index))
+                          setImagePreviews(prev => prev.filter((_, i) => i !== index))
+                        }}
+                        className="absolute top-1 right-1 bg-red-500 text-white p-1 rounded-full hover:bg-red-600 transition-colors"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
           </div>
