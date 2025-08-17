@@ -289,8 +289,6 @@ export default function App() {
   const deleteImagesFromStorage = async (imageUrls) => {
     if (!imageUrls || imageUrls.length === 0) return
     
-    console.log('Deleting images from storage:', imageUrls)
-    
     for (const imageUrl of imageUrls) {
       try {
         // Extract the file path from the URL
@@ -305,8 +303,6 @@ export default function App() {
           
           if (error) {
             console.error('Failed to delete image from storage:', filename, error)
-          } else {
-            console.log('Successfully deleted image from storage:', filename)
           }
         }
       } catch (error) {
@@ -417,24 +413,17 @@ export default function App() {
         clue_type: updatedData.get('clue_type') || null
       }
       
-      console.log('Updating egg with image_url:', eggData.image_url)
-      
       // Import the parseImageUrls utility
       const { parseImageUrls } = await import('./utils/imageUtils.js')
-      
-      console.log('Update debug - editingEgg.image_url:', editingEgg.image_url)
-      console.log('Update debug - deleted_images:', updatedData.getAll('deleted_images'))
       
       // Handle image changes
       if (imageUrls.length > 0) {
         // Parse existing images properly
         const existingImages = parseImageUrls(editingEgg.image_url)
-        console.log('Update debug - parsed existing images:', existingImages)
         
         // Remove deleted images from remaining images
         const deletedImageUrls = updatedData.getAll('deleted_images')
         const finalImages = existingImages.filter(img => !deletedImageUrls.includes(img))
-        console.log('Update debug - final images after filtering:', finalImages)
         
         // Add new images
         eggData.image_url = [...finalImages, ...imageUrls]
@@ -453,9 +442,7 @@ export default function App() {
         const deletedImageUrls = updatedData.getAll('deleted_images')
         if (deletedImageUrls.length > 0) {
           const existingImages = parseImageUrls(editingEgg.image_url)
-          console.log('Update debug - parsed existing images for deletion:', existingImages)
           eggData.image_url = existingImages.filter(img => !deletedImageUrls.includes(img))
-          console.log('Update debug - final image_url after deletion:', eggData.image_url)
           
           // Delete removed images from storage
           await deleteImagesFromStorage(deletedImageUrls)

@@ -74,8 +74,6 @@ export default function EasterEggModal({
             {selectedEgg.image_url && (
               <div className="mb-4">
                 {(() => {
-                  console.log('Modal - selectedEgg.image_url:', selectedEgg.image_url, 'type:', typeof selectedEgg.image_url)
-                  
                   // Use utility function to parse image URLs
                   const imageUrls = parseImageUrls(selectedEgg.image_url)
                   

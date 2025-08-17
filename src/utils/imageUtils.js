@@ -28,17 +28,14 @@ export function parseImageUrls(imageUrl) {
         if (typeof parsed === 'string' && parsed.startsWith('[')) {
           try {
             const doubleParsed = JSON.parse(parsed)
-            console.log('Array with double-encoded JSON string parsed to:', doubleParsed)
             return Array.isArray(doubleParsed) ? doubleParsed : [parsed]
           } catch (e) {
-            console.error('Failed to double parse JSON string from array:', e)
             return [imageUrl[0]] // Fallback to original string
           }
         } else {
           return Array.isArray(parsed) ? parsed : [parsed]
         }
       } catch (e) {
-        console.error('Failed to parse JSON string from array:', e)
         return imageUrl // Return original array
       }
     }
@@ -65,9 +62,7 @@ export function parseImageUrls(imageUrl) {
     if (typeof parsed === 'string' && parsed.startsWith('[')) {
       try {
         parsed = JSON.parse(parsed)
-        console.log('Double parsed JSON string to:', parsed)
       } catch (e) {
-        console.error('Failed to double parse JSON string:', e)
         return [imageUrl] // Fallback to original string
       }
     }
@@ -78,11 +73,9 @@ export function parseImageUrls(imageUrl) {
     } else if (typeof parsed === 'string') {
       return [parsed]
     } else {
-      console.warn('Unexpected parsed result type:', typeof parsed, parsed)
       return []
     }
   } catch (e) {
-    console.error('Failed to parse JSON string:', e)
     return [imageUrl] // Fallback to original string
   }
 }

@@ -33,7 +33,6 @@ export default function EditEggModal({ isOpen, onClose, egg, onUpdate, user }) {
       
       // Use utility function to parse image URLs
       const currentImages = parseImageUrls(egg.image_url)
-      console.log('EditModal - Parsed image URLs:', currentImages)
       setImagePreviews(currentImages)
       setRemoveCurrentImages(false)
     }

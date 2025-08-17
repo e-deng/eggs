@@ -90,8 +90,6 @@ export default function EasterEggCard({
         {egg.image_url && (
           <div className="mb-3">
             {(() => {
-              console.log('egg.image_url:', egg.image_url, 'type:', typeof egg.image_url)
-              
               // Use utility function to parse image URLs
               const imageUrls = parseImageUrls(egg.image_url)
               
