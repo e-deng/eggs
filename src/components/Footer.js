@@ -6,7 +6,7 @@ export default function Footer() {
       <div className="max-w-4xl mx-auto px-4 py-4">
         <div className="flex flex-col md:flex-row justify-between items-center space-y-2 md:space-y-0">
           <p className="text-xs text-gray-400">
-            © 2025 TS Easter Eggs. Fan-made website.
+            © 2025 Egg. Fan-made website.
           </p>
           <div className="flex space-x-4 text-xs text-gray-400">
             <button className="hover:text-orange-500 transition-colors">Privacy</button>

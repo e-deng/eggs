@@ -8,6 +8,7 @@ import AuthModal from "./components/AuthModal"
 import AuthNotice from "./components/AuthNotice"
 import LoginPrompt from "./components/LoginPrompt"
 import NoPostsMessage from "./components/NoPostsMessage"
+import DatabaseUnavailableNotice from "./components/DatabaseUnavailableNotice"
 import TopNavigation from "./components/TopNavigation"
 import MobileSearch from "./components/MobileSearch"
 import BottomNavigation from "./components/BottomNavigation"
@@ -17,6 +18,7 @@ import { easterEggsService, commentsService, likesService, commentLikesService }
 import { authService } from "./services/supabaseService"
 import { getAlbumColors } from "./utils/albumColors"
 import { supabase } from "./supabaseClient"
+import { isDatabaseUnavailableError } from "./utils/databaseStatus"
 
 
 export default function App() {
@@ -31,6 +33,10 @@ export default function App() {
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedAlbum, setSelectedAlbum] = useState("All Albums")
   const [loading, setLoading] = useState(true)
+  // True when the initial Easter eggs fetch indicates the database itself is
+  // unreachable (most likely a paused Supabase project), rather than just
+  // being empty. Drives a dedicated notice in place of the normal content.
+  const [dbUnavailable, setDbUnavailable] = useState(false)
   const [comments, setComments] = useState([])
   const [newComment, setNewComment] = useState("")
   const [sortBy, setSortBy] = useState("date")
@@ -97,9 +103,13 @@ export default function App() {
       const { data: eggs, error } = await easterEggsService.getAllEasterEggs()
       
       if (error) {
+        if (isDatabaseUnavailableError(error)) {
+          setDbUnavailable(true)
+        }
         throw new Error('Failed to fetch Easter eggs')
       }
       
+      setDbUnavailable(false)
       setEasterEggs(eggs || [])
     } catch (error) {
       setEasterEggs([])
@@ -691,7 +701,7 @@ export default function App() {
         />
 
       {/* Auth Notice */}
-      {!user && <AuthNotice onOpenAuthModal={() => setIsAuthModalOpen(true)} />}
+      {!user && !dbUnavailable && <AuthNotice onOpenAuthModal={() => setIsAuthModalOpen(true)} />}
 
       {/* Main Content */}
       <main className="flex-1 max-w-4xl mx-auto px-4 py-6">
@@ -722,7 +732,9 @@ export default function App() {
         )}
 
         {/* Content based on active tab and authentication */}
-        {activeTab === 'post' && !user ? (
+        {dbUnavailable ? (
+          <DatabaseUnavailableNotice onRetry={loadEasterEggs} />
+        ) : activeTab === 'post' && !user ? (
           <LoginPrompt 
             message="Please log in or create an account to post Easter eggs!"
             onOpenAuthModal={(mode) => {
